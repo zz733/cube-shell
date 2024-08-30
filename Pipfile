@@ -9,7 +9,6 @@ paramiko = "*"
 pygments = "*"
 qdarkstyle = "*"
 py2app = "*"
-pyinstaller = "*"
 pywin32-ctypes = "*"
 
 [dev-packages]
