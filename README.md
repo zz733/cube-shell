@@ -1,8 +1,5 @@
 ## cube-shell
 
-#### 前言
-大家好，我是寒暄。有一段时间没有写东西了，也没有进行技术分享。消失的这段时间，主要是在干一件事情，开发`cube-shell`。这是一个`linux`服务器的远程管理工具。功能就是我们平时开发常用到的。特点就是`UI`简洁。没有过多的菜单栏。
-
 #### 介绍
 `cube-shell`是`linux` 服务器远程管理工具，可以取代Xshell、XSftp、MobaXterm 等工具对服务器进行管理，`cube-shell` 简洁且强大。市面上大多数ssh客户端工具都是集成了很多没有用的菜单，而且ui设计十分复杂，对于初学者不太友好。
 
@@ -18,47 +15,46 @@
 - 创建文件
 - 删除文件和文件夹（支持批量删除）
 
-![](https://files.mdnice.com/user/66248/9124f1d4-5462-4eec-884c-1cc5b47dfd79.png)
+![输入图片说明](test/1.webp)
 
 **2.支持ssh协议远程操作linux系统**
 - 可以进行终端操作
 - 代码高亮显示
 - 命令行补全功能
 
-![](https://files.mdnice.com/user/66248/056a4939-3ec5-40ab-b119-39671efb92a7.png)
+![输入图片说明](test/2.webp)
 
 
 **3.主题切换**
-- `cube-shell`目前支持两种主题切换，暗主题和亮主题两种，后期会增加更多的主题选择，目前没有对终端窗口的代码高亮进行主题切换，后面也会慢慢加上去。
-![](https://files.mdnice.com/user/66248/0d29efc8-97c6-46e3-b105-2ec157510b27.jpg)
-
-![](https://files.mdnice.com/user/66248/35883985-dc06-493d-80c5-c118e264cf3a.jpg)
+- `cube-shell`目前支持两种主题切换，暗主题和亮主题两种
+![输入图片说明](test/3.webp)
+![输入图片说明](test/4.webp)
 
 **4.服务器状态监控**
 - CPU 使用率
 - 内存使用率
 - 磁盘使用率
 
-![](https://files.mdnice.com/user/66248/3d46eab4-35cc-4372-9336-e4cd01c05230.png)
+![输入图片说明](test/5.webp)
 
 
 **5.查看服务进程**
 - `cube-shell`支持一键查看进程
 
-![](https://files.mdnice.com/user/66248/0005d921-b0f7-446f-8718-05778ac90561.png)
+![输入图片说明](test/6.webp)
 
 **6.支持shell脚本复制键贴执行**
 
 - 写好的`shell`脚本可以粘进脚本区域，点击初始化就能执行脚本。脚本区域也支持 不同版本linux发行版的差异化命令行执行。
 
-![](https://files.mdnice.com/user/66248/287525a4-3bfe-4029-a4d5-1c808788943d.png)
+![输入图片说明](test/7.webp)
 
 **7.docker容器管理**
 - 停止容器
 - 重启容器
 - 删除容器
 
-![](https://files.mdnice.com/user/66248/0f142a22-145c-46a0-8964-dd719230a448.png)
+![输入图片说明](test/8.webp)
 
     
 #### 软件架构
