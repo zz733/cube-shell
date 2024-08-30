@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pyside6 = "*"
+paramiko = "*"
+pygments = "*"
+qdarkstyle = "*"
+py2app = "*"
+pyinstaller = "*"
+pywin32-ctypes = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

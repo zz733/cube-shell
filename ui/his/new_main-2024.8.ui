@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>寒暄</author>
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1518</width>
+    <height>510</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_5">
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitter_3">
+      <property name="cursor">
+       <cursorShape>SizeHorCursor</cursorShape>
+      </property>
+      <property name="mouseTracking">
+       <bool>false</bool>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Orientation::Horizontal</enum>
+      </property>
+      <widget class="QWidget" name="gridLayoutWidget">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QTreeWidget" name="treeWidget">
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>0</height>
+           </size>
+          </property>
+          <column>
+           <property name="text">
+            <string>设备列表</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QSplitter" name="splitter_255">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="cursor">
+        <cursorShape>SizeHorCursor</cursorShape>
+       </property>
+       <property name="mouseTracking">
+        <bool>false</bool>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <widget class="QWidget" name="gridLayoutWidget_2">
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="0" column="1">
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>网关</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="wanIP">
+             <property name="text">
+              <string>192.168.1.250/24</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>公网IP</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QPushButton" name="setLan">
+             <property name="text">
+              <string>设置内网</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="gateway">
+             <property name="text">
+              <string>192.168.1.1</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QPushButton" name="setWan">
+             <property name="text">
+              <string>设置公网</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="lanIP">
+             <property name="text">
+              <string>192.168.137.100/24</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>内网IP</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QPlainTextEdit" name="initKey">
+             <property name="placeholderText">
+              <string>请复制服务端秘钥，或键入需要运行的命令，请注意是否需要增加sudo</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="init">
+             <property name="text">
+              <string>初始化
+（运行命令）</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="0" column="0">
+          <layout class="QGridLayout" name="gridLayout_8">
+           <item row="2" column="1">
+            <widget class="QProgressBar" name="diskRate">
+             <property name="value">
+              <number>24</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>内存使用率</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>CPU使用率</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>磁盘使用率</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QProgressBar" name="cpuRate">
+             <property name="value">
+              <number>24</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QProgressBar" name="memRate">
+             <property name="value">
+              <number>24</number>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QPushButton" name="discButton">
+             <property name="text">
+              <string>断开连接</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QPushButton" name="timezoneButton">
+             <property name="text">
+              <string>设置时区</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QPushButton" name="webview">
+             <property name="text">
+              <string>打开控制台</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="iport">
+             <property name="text">
+              <string>192.168.137.0/24</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="seeOnline">
+             <property name="text">
+              <string>查看在线设备</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="showPort">
+             <property name="text">
+              <string>扫描ip端口</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="3" column="0" colspan="2">
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <widget class="QProgressBar" name="progressBar">
+             <property name="value">
+              <number>24</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTextBrowser" name="result"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="gridLayoutWidget_3">
+        <layout class="QGridLayout" name="gridLayout_6">
+         <item row="0" column="0">
+          <widget class="QSplitter" name="splitter">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>888</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="sizeIncrement">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="baseSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="cursor">
+            <cursorShape>SizeVerCursor</cursorShape>
+           </property>
+           <property name="mouseTracking">
+            <bool>false</bool>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <widget class="QWidget" name="verticalLayoutWidget">
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <widget class="QTextBrowser" name="Shell">
+               <property name="minimumSize">
+                <size>
+                 <width>234</width>
+                 <height>338</height>
+                </size>
+               </property>
+               <property name="sizeIncrement">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="html">
+                <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'.AppleSystemUIFont'; font-size:13pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="verticalLayoutWidget_2">
+            <layout class="QVBoxLayout" name="verticalLayout_2">
+             <item>
+              <widget class="QTreeWidget" name="treeWidget333">
+               <column>
+                <property name="text">
+                 <string>设备列表</string>
+                </property>
+               </column>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
