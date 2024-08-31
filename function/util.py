@@ -1,8 +1,7 @@
-# 小于展示字节，大于或等于展示KB
-from PySide6.QtCore import QFileInfo
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFileIconProvider
 
+# 小于展示字节，大于或等于展示KB
 MAX_BYTES_SIZE = 1024
 # 小于展示KB，大于或等于展示MB
 MAX_KB_SIZE = 1024 * 1024
@@ -68,6 +67,10 @@ def getDefaultFileIcon(qt_str):
         return QIcon('icons/icons8-json-48.png')
     elif qt_str.endswith('.txt'):
         return QIcon('icons/icons8-txt-48.png')
+    elif qt_str.endswith('.gitignore'):
+        return QIcon('icons/icons8-gitignore-48.png')
+    elif qt_str.endswith('.md'):
+        return QIcon('icons/icons8-md-48.png')
 
     return icon_provider.icon(QFileIconProvider.File)
 
