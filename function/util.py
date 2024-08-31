@@ -71,6 +71,8 @@ def getDefaultFileIcon(qt_str):
         return QIcon('icons/icons8-gitignore-48.png')
     elif qt_str.endswith('.md'):
         return QIcon('icons/icons8-md-48.png')
+    elif qt_str.endswith(('.yaml', '.yml')):
+        return QIcon('icons/icons8-yaml-48.png')
 
     return icon_provider.icon(QFileIconProvider.File)
 
