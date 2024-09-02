@@ -1,3 +1,5 @@
+import json
+
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFileIconProvider
 
@@ -73,6 +75,8 @@ def getDefaultFileIcon(qt_str):
         return QIcon('icons/icons8-md-48.png')
     elif qt_str.endswith(('.yaml', '.yml')):
         return QIcon('icons/icons8-yaml-48.png')
+    elif qt_str.endswith('.properties'):
+        return QIcon('icons/icons8-properties-48.png')
 
     return icon_provider.icon(QFileIconProvider.File)
 
@@ -120,3 +124,23 @@ def check_remote_directory_exists(sftp, directory):
         return True
     except FileNotFoundError:
         return False
+
+
+def read_json_file(file_path):
+    """
+    读取json文件
+    :param file_path: 文件地址
+    :return:返回json对象
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            return data
+    except FileNotFoundError:
+        print(f"Error: The file '{file_path}' was not found.")
+    except json.JSONDecodeError:
+        print(f"Error: The file '{file_path}' is not a valid JSON file.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+    return None
