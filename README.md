@@ -123,3 +123,6 @@ python setup.py py2app --strip --optimize=2
 2.  新建 Feat_xxx 分支
 3.  提交代码
 4.  新建 Pull Request
+
+#### 有任何不懂的可以加交流群
+![输入图片说明](test/WechatIMG25.jpg)
