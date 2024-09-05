@@ -144,3 +144,14 @@ def read_json_file(file_path):
         print(f"An unexpected error occurred: {e}")
 
     return None
+
+
+# 函数：清空QGridLayout中的所有widget
+def clear_grid_layout(layout):
+    while layout.count():
+        layout_item = layout.takeAt(0)
+        if layout_item.widget():
+            layout_item.widget().deleteLater()
+        elif layout_item.layout():
+            clear_grid_layout(layout_item.layout())  # 递归清空子布局
+            layout_item.layout().deleteLater()

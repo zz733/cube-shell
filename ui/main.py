@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui
 ################################################################################
-## Form generated from reading UI file 'new_main1.ui'
+## Form generated from reading UI file 'main1.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.7.2
 ##
@@ -18,19 +18,18 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QHeaderView,
                                QLabel, QLineEdit, QMainWindow, QPlainTextEdit,
                                QProgressBar, QPushButton, QSizePolicy, QSplitter,
-                               QTextBrowser, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
-                               QWidget)
+                               QTabWidget, QTextBrowser, QTreeWidget, QTreeWidgetItem,
+                               QVBoxLayout, QWidget, QDialog, QStyleOptionTab)
 
-from style.style import DangerButtonStyle, PrimaryButtonStyle, DefaultButtonStyle, InfoButtonStyle
+from style.style import PrimaryButtonStyle, InfoButtonStyle, DangerButtonStyle
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1524, 510)
+        MainWindow.resize(1522, 678)
         MainWindow.setFocusPolicy(QtCore.Qt.NoFocus)
-        # 窗口不接收焦点
         self.centralwidget = QWidget(MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -67,6 +66,11 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.treeWidget, 1, 0, 1, 1)
 
+        self.lineEdit = QLineEdit(self.gridLayoutWidget)
+        self.lineEdit.setObjectName(u"lineEdit")
+
+        self.gridLayout.addWidget(self.lineEdit, 0, 0, 1, 1)
+
         # 创建初始的 QLineEdit
         self.line_edits = []  # 保存所有 QLineEdit 的列表
 
@@ -87,7 +91,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.horizontalLayout_3.setContentsMargins(3, -1, 3, -1)
         self.webview = QPushButton(self.gridLayoutWidget_2)
-        # self.webview.setEnabled(False)
         self.webview.setTabletTracking(False)
         self.webview.setStyleSheet(PrimaryButtonStyle)
         self.webview.setCursor(QCursor(Qt.PointingHandCursor))
@@ -306,6 +309,7 @@ class Ui_MainWindow(object):
         self.verticalLayout = QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+
         self.Shell = QTextBrowser(self.verticalLayoutWidget)
         self.Shell.setEnabled(False)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -333,9 +337,34 @@ class Ui_MainWindow(object):
         self.verticalLayout_2 = QVBoxLayout(self.verticalLayoutWidget_2)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.tabWidget = QTabWidget(self.verticalLayoutWidget_2)
+        self.tabWidget.setCursor(QCursor(Qt.PointingHandCursor))
+        font = QFont()
+        font.setWeight(QFont.ExtraLight)
+        self.tabWidget.setFont(font)
+        self.tabWidget.setStyleSheet("""
+            QTabBar::tab {
+                border-top-left-radius: 10px; /* 左上角圆角 */
+                border-top-right-radius: 10px; /* 右上角圆角 */
+                top: 3px;
+                min-width: 8ex;
+                padding: 2px;
+            }
+            QTabBar::tab:selected {
+                border-color: #9B9B9B;
+                margin-bottom: -1px; /* 使选中的 tab 突出 */
+            }
+        """)
+        self.tabWidget.setObjectName(u"tabWidget")
+        self.tab_dockermanager = QWidget()
+        self.tab_dockermanager.setObjectName(u"tab_dockermanager")
+        self.horizontalLayout_4 = QHBoxLayout(self.tab_dockermanager)
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_4 = QVBoxLayout()
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
 
-        # TODO treeWidget333 树状目录
-        self.treeWidget333 = QTreeWidget(self.verticalLayoutWidget_2)
+        self.treeWidget333 = QTreeWidget(self.tab_dockermanager)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -346,7 +375,24 @@ class Ui_MainWindow(object):
         self.treeWidget333.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.treeWidget333.setObjectName(u"treeWidget333")
 
-        self.verticalLayout_2.addWidget(self.treeWidget333)
+        self.verticalLayout_4.addWidget(self.treeWidget333)
+
+        self.horizontalLayout_4.addLayout(self.verticalLayout_4)
+
+        self.tabWidget.addTab(self.tab_dockermanager, "")
+        self.tab_soft = QWidget()
+        self.tab_soft.setObjectName(u"tab_soft")
+        self.horizontalLayout_6 = QHBoxLayout(self.tab_soft)
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.horizontalLayout_6.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout_3 = QGridLayout()
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
+
+        self.horizontalLayout_6.addLayout(self.gridLayout_3)
+
+        self.tabWidget.addTab(self.tab_soft, "")
+
+        self.verticalLayout_2.addWidget(self.tabWidget)
 
         self.splitter.addWidget(self.verticalLayoutWidget_2)
 
@@ -361,12 +407,16 @@ class Ui_MainWindow(object):
         self.action = QtGui.QAction(MainWindow)
         self.action.setObjectName("action")
         self.retranslateUi(MainWindow)
+
+        self.tabWidget.setCurrentIndex(0)
+
         QMetaObject.connectSlotsByName(MainWindow)
 
     def add_line_edit(self, q_str):
         # 创建一个新的 QLineEdit
         line_edit = QLineEdit()
         line_edit.setText(q_str)
+        line_edit.setReadOnly(True)
         # 保存新创建的 QLineEdit
         self.line_edits.append(line_edit)
         # 将 QLineEdit 添加到布局中
@@ -379,9 +429,6 @@ class Ui_MainWindow(object):
                 line_edit.deleteLater()
             # 清空 QLineEdit 列表
             self.line_edits.clear()
-            # last_line_edit = self.line_edits.pop()  # 从列表中移除
-            # self.gridLayout.removeWidget(last_line_edit)
-            # last_line_edit.deleteLater()  # 使用 deleteLater() 以确保控件被正确地删除
 
     # setupUi
 
@@ -424,4 +471,8 @@ class Ui_MainWindow(object):
                                                       None))
         ___qtreewidgetitem1 = self.treeWidget333.headerItem()
         ___qtreewidgetitem1.setText(0, QCoreApplication.translate("MainWindow", u"docker容器管理：", None));
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_dockermanager),
+                                  QCoreApplication.translate("MainWindow", u"\u5bb9\u5668\u7ba1\u7406", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_soft),
+                                  QCoreApplication.translate("MainWindow", u"\u5e38\u7528\u5bb9\u5668", None))
     # retranslateUi

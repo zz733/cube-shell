@@ -6,13 +6,12 @@ import threading
 import time
 
 import PySide6
-import paramiko
 import qdarkstyle
-from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent
+from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, Slot
 from PySide6.QtGui import QIcon, QAction, QTextCursor, QCursor, QCloseEvent, QKeyEvent, QInputMethodEvent, QPixmap, \
-    QDragEnterEvent, QDropEvent, QFont
+    QDragEnterEvent, QDropEvent, QFont, QContextMenuEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QDialog, QMessageBox, QTreeWidgetItem, \
-    QInputDialog, QFileDialog, QTreeWidget
+    QInputDialog, QFileDialog, QTreeWidget, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
@@ -21,7 +20,7 @@ from qdarkstyle import DarkPalette, LightPalette
 from function import ssh_func, get_running_data, util
 from function.util import format_file_size, has_valid_suffix
 from style.style import updateColor
-from ui import add_config, text_editor, confirm, main
+from ui import add_config, text_editor, confirm, main, docker_install
 
 
 # 主界面逻辑
@@ -44,6 +43,9 @@ class MainDialog(QMainWindow):
         self.ui.Shell.setAttribute(Qt.WA_InputMethodEnabled, True)
         self.ui.Shell.setAttribute(Qt.WA_KeyCompression, True)
 
+        # 重写 contextMenuEvent 方法
+        self.ui.Shell.contextMenuEvent = self.showCustomContextMenu
+
         self.ssh_conn = None
         self.sign = b''
         self.timer, self.timer1, self.timer2 = None, None, None
@@ -53,7 +55,7 @@ class MainDialog(QMainWindow):
         self.file_name = ''
         self.fileEvent = ''
 
-        self.ssh_username, self.ssh_password, self.ssh_ip = None, None, None
+        self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
 
         self.ui.discButton.clicked.connect(self.disconnect)
         self.ui.seeOnline.clicked.connect(self.getRunData)
@@ -126,6 +128,40 @@ class MainDialog(QMainWindow):
             if self.ui.treeWidget.visualItemRect(item).intersects(rect):
                 item.setSelected(True)
 
+    # 自定义右键菜单
+    def showCustomContextMenu(self, event: QContextMenuEvent):
+        # 创建一个 QMenu 对象
+        menu = QMenu(self.ui.Shell)
+
+        # 创建复制和粘贴的 QAction 对象
+        copy_action = QAction('复制', self)
+        paste_action = QAction('粘贴', self)
+
+        # 绑定槽函数到 QAction 对象
+        copy_action.triggered.connect(self.copy)
+        paste_action.triggered.connect(self.paste)
+
+        # 将 QAction 对象添加到菜单中
+        menu.addAction(copy_action)
+        menu.addAction(paste_action)
+
+        # 显示菜单
+        menu.exec_(event.globalPos())
+
+    # 复制文本
+    def copy(self):
+        # 获取当前选中的文本，并复制到剪贴板
+        selected_text = self.ui.Shell.textCursor().selectedText()
+        clipboard = QApplication.clipboard()
+        clipboard.setText(selected_text)
+
+    # 粘贴文本
+    def paste(self):
+        # 从剪贴板获取文本，并粘贴到 QTextBrowser
+        clipboard = QApplication.clipboard()
+        clipboard_text = clipboard.text()
+        self.ssh_conn.send(clipboard_text.encode('utf8'))
+
     # 连接服务器
     def connect(self):
         focus = self.ui.treeWidget.currentIndex().row()
@@ -134,14 +170,23 @@ class MainDialog(QMainWindow):
             with open('config.dat', 'rb') as c:
                 conf = pickle.loads(c.read())[name]
                 c.close()
-            username, password, host = conf[0], conf[1], conf[2]
+            print(len(conf))
+
+            username, password, host, key_type, key_file = '', '', '', '', ''
+
+            if len(conf) == 3:
+                username, password, host = conf[0], conf[1], conf[2]
+            else:
+                username, password, host, key_type, key_file = conf[0], conf[1], conf[2], conf[3], conf[4]
             try:
-                self.ssh_conn = ssh_func.SshClient(host.split(':')[0], int(host.split(':')[1]), username, password)
+                self.ssh_conn = ssh_func.SshClient(host.split(':')[0], int(host.split(':')[1]), username, password,
+                                                   key_type, key_file)
                 self.ssh_conn.connect()
                 self.ssh_conn.open_sftp()
             except Exception as e:
                 self.ui.Shell.setPlaceholderText(str(e))
-            self.ssh_username, self.ssh_password, self.ssh_ip = username, password, host
+            self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = username, password, \
+                host, key_type, key_file
             if self.ssh_conn.session is not None:
                 self.isConnected = True
                 self.ui.discButton.setEnabled(True)
@@ -162,7 +207,9 @@ class MainDialog(QMainWindow):
                 self.ui.timezoneButton.setEnabled(True)
                 th1 = threading.Thread(target=self.ssh_conn.receive, daemon=True)
                 th1.start()
-                self.getsysinfo = get_running_data.DevicInfo(username=conf[0], password=conf[1], host=conf[2])
+
+                self.getsysinfo = get_running_data.DevicInfo(username=conf[0], password=conf[1], host=conf[2],
+                                                             key_type=key_type, key_file=key_file)
                 th3 = threading.Thread(target=self.getsysinfo.get_datas, daemon=True)
                 th3.start()
                 self.flush()
@@ -171,6 +218,29 @@ class MainDialog(QMainWindow):
                 self.refreshDokerInfo()
                 self.flushDokerInfo()
                 self.refreshDirs()
+
+                # 读取json文件
+                items = util.read_json_file("function/docker.json")
+                # 每行最多四个小块
+                max_columns = 4
+                # 遍历列表，创建小块并添加到网格布局中
+                for index, item in enumerate(items):
+                    row = index // max_columns
+                    col = index % max_columns
+
+                    # 创建外部容器
+                    container_widget = QWidget()
+                    container_layout = QVBoxLayout()
+                    container_widget.setLayout(container_layout)
+                    container_layout.setContentsMargins(0, 0, 0, 0)  # 去掉布局的内边距
+                    container_widget.setStyleSheet("background-color: rgb(187, 232, 221);")
+
+                    # 创建自定义小块并添加到外部容器
+                    widget = CustomWidget(item, self.ssh_conn)
+                    container_layout.addWidget(widget)
+
+                    self.ui.gridLayout_3.addWidget(container_widget, row, col)
+
             else:
                 pass
         else:
@@ -207,7 +277,7 @@ class MainDialog(QMainWindow):
         self.ssh_conn.term_data = b''
         self.ssh_conn.diconnect()
         self.isConnected = False
-        self.ssh_username, self.ssh_password, self.ssh_ip = None, None, None
+        self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
         self.ui.discButton.setDisabled(True)
         self.ui.seeOnline.setDisabled(True)
         self.ui.result.setDisabled(True)
@@ -232,6 +302,8 @@ class MainDialog(QMainWindow):
 
         self.ui.treeWidget333.clear()
         self.ui.result.clear()
+
+        util.clear_grid_layout(self.ui.gridLayout_3)
 
         self.ui.cpuRate.setValue(0)
         self.ui.diskRate.setValue(0)
@@ -274,12 +346,11 @@ class MainDialog(QMainWindow):
 
     # 键盘事件， shell输入
     def keyReleaseEvent(self, a0: QKeyEvent) -> None:
-        print(a0.text())
         try:
             if a0.key() == 16777219:
                 self.ssh_conn.send(b'\x08')
             elif a0.key() == 16777219:
-                self.ssh_con.send(b'\x09')
+                self.ssh_conn.send(b'\x09')
             elif a0.key() == 16777235:
                 self.ssh_conn.send(b'\x1b[A')
             elif a0.key() == 16777237:
@@ -299,7 +370,6 @@ class MainDialog(QMainWindow):
 
     def inputMethodEvent(self, a0: QInputMethodEvent) -> None:
         cmd = a0.commitString()
-        print(cmd)
         if cmd != '':
             self.ssh_conn.send(cmd.encode('utf8'))
 
@@ -329,22 +399,11 @@ class MainDialog(QMainWindow):
         else:
             pass
         self.ui.progressBar.setValue(20)
-        username, password, host = self.ssh_username, self.ssh_password, self.ssh_ip
         self.ui.result.append(cmd)
         if self.isConnected is True:
             try:
-                # 创建SSH对象
-                ssh = paramiko.SSHClient()
-                # 允许连接不在know_hosts文件中的主机
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                # 连接服务器
-                ssh.connect(hostname=host.split(':')[0], port=int(host.split(':')[1]),
-                            username=username, password=password, timeout=3)
                 self.ui.progressBar.setValue(50)
-                # 执行命令
-                stdin, stdout, stderr = ssh.exec_command(timeout=10, bufsize=100, command=cmd)
-                # 获取命令结果
-                ack = stdout.read().decode('utf8')
+                ack = self.ssh_conn.exec(cmd=cmd, pty=False)
 
                 formatter = HtmlFormatter(style='rrt', noclasses=True)
                 # 高亮代码
@@ -582,13 +641,15 @@ class MainDialog(QMainWindow):
     # 获取返回信息，并保存文件
     def getNewText(self, new_list):
         nt, sig = new_list[0], new_list[1]
+        # 将双引号转义为转义字符
+        escaped_string = nt.replace("\"", '\\"')
         if sig == 0:
-            self.getData2('sudo echo -e "' + nt + '" > ' + self.pwd + '/' + self.file_name)
+            self.getData2('sudo echo -e "' + escaped_string + '" > ' + self.pwd + '/' + self.file_name)
             self.ui.addTextEditWin.new_text = self.ui.addTextEditWin.old_text
             self.ui.addTextEditWin.te.chk.close()
             self.ui.addTextEditWin.close()
         elif sig == 1:
-            self.getData2('sudo echo -e "' + nt + '" > ' + self.pwd + '/' + self.file_name)
+            self.getData2('sudo echo -e "' + escaped_string + '" > ' + self.pwd + '/' + self.file_name)
             self.ui.addTextEditWin.old_text = nt
 
     # 删除设备配置文件
@@ -905,18 +966,29 @@ class AddConfigUi(QDialog):
         super().__init__()
         self.dial = add_config.Ui_addConfig()
         self.dial.setupUi(self)
+        # 保持弹窗置顶
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        self.dial.pushButton_3.setEnabled(False)
+        self.dial.lineEdit.setEnabled(False)
         self.setWindowIcon(QIcon("Resources/icon.ico"))
         self.dial.pushButton.clicked.connect(self.addDev)
+        self.dial.pushButton_3.clicked.connect(self.add_key_file)
+
+        self.dial.comboBox.currentIndexChanged.connect(self.handle_combo_box)
 
     def addDev(self):
-        name, username, password, ip, prot = self.dial.configName.text(), self.dial.usernamEdit.text(), \
-            self.dial.passwordEdit.text(), self.dial.ipEdit.text(), self.dial.protEdit.text()
+        name, username, password, ip, prot, private_key_file, private_key_type = self.dial.configName.text(), \
+            self.dial.usernamEdit.text(), self.dial.passwordEdit.text(), self.dial.ipEdit.text(), \
+            self.dial.protEdit.text(), self.dial.lineEdit.text(), self.dial.comboBox.currentText()
+
         if name == '':
             self.alarm('配置名称不能为空！')
         elif username == '':
             self.alarm('用户名不能为空！')
-        elif password == '':
-            self.alarm('密码不能为空！')
+        elif password == '' and private_key_type == '':
+            self.alarm('密码或者密钥必须提供一个！')
+        elif private_key_type != '' and private_key_file == '':
+            self.alarm('请上传私钥文件！')
         elif ip == '':
             self.alarm('ip地址不能为空！')
         else:
@@ -924,10 +996,30 @@ class AddConfigUi(QDialog):
                 conf = pickle.loads(c.read())
                 c.close()
             with open('config.dat', 'wb') as c:
-                conf[name] = [username, password, f"{ip}:{prot}"]
+                conf[name] = [username, password, f"{ip}:{prot}", private_key_type, private_key_file]
                 c.write(pickle.dumps(conf))
                 c.close()
             self.close()
+
+    def add_key_file(self):
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择文件",
+            "",
+            "所有文件 (*);;Python 文件 (*.py);;文本文件 (*.txt)",
+            # options=options
+        )
+        if file_name:
+            self.dial.lineEdit.setText(file_name)
+
+    def handle_combo_box(self):
+        if self.dial.comboBox.currentText():
+            self.dial.pushButton_3.setEnabled(True)
+            self.dial.lineEdit.setEnabled(True)
+        else:
+            self.dial.pushButton_3.setEnabled(False)
+            self.dial.lineEdit.clear()
+            self.dial.lineEdit.setEnabled(False)
 
     def alarm(self, alart):
         self.dial.alarmbox = QMessageBox()
@@ -1003,6 +1095,195 @@ class Confirm(QDialog):
         self.cfm = confirm.Ui_confirm()
         self.cfm.setupUi(self)
         self.setWindowIcon(QIcon("Resources/icon.ico"))
+
+
+class Communicate(QObject):
+    # 定义一个无参数的信号，用于通知父窗口刷新
+    refresh_parent = Signal()
+
+
+class CustomWidget(QWidget):
+    def __init__(self, item, ssh_conn, parent=None):
+        super().__init__(parent)
+
+        self.docker = None
+
+        self.layout = QVBoxLayout()
+
+        # 创建图标标签
+        icon_label = QLabel(self)
+        pixmap = QPixmap(item['icon'])
+        icon_label.setPixmap(pixmap)
+        icon_label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(icon_label)
+
+        # 创建按钮布局
+        self.button_layout = QHBoxLayout()
+
+        cmd = "docker ps -a | grep " + item['containerName']
+        ack = ssh_conn.exec(cmd=cmd, pty=False)
+        if not ack:
+            # 安装按钮
+            self.install_button = QPushButton("安装", self)
+            self.install_button.setCursor(QCursor(Qt.PointingHandCursor))
+            self.install_button.clicked.connect(lambda: self.install_action(item, ssh_conn))
+            self.button_layout.addWidget(self.install_button)
+        else:
+            # 安装按钮
+            self.install_button = QPushButton("已安装", self)
+            self.install_button.setCursor(QCursor(Qt.PointingHandCursor))
+            self.install_button.setStyleSheet("background-color: rgb(102, 221, 121);")
+            self.install_button.setDisabled(True)
+            self.button_layout.addWidget(self.install_button)
+
+        self.layout.addLayout(self.button_layout)
+        self.setLayout(self.layout)
+
+        # 设置样式表为小块添加边框
+        self.setStyleSheet("""
+            QWidget {
+                border-radius: 5px;
+                padding: 5px;
+            }
+            QPushButton {
+                background-color: rgb(50,115,245);
+                border-radius: 5px;
+                padding: 10px;
+            }
+            QPushButton:pressed {
+                background-color: darkgray;
+            }
+        """)
+
+    def install_action(self, item, ssh_conn):
+        """
+        点击安装按钮，安装docker容器
+        :param item: 数据对象
+        :param ssh_conn: ssh 连接对象
+        :return:
+        """
+
+        self.docker = InstallDocker(item, ssh_conn)
+        self.docker.dial.lineEdit_containerName.setText(item['containerName'])
+        self.docker.dial.lineEdit_Image.setText(item['image'])
+
+        volumes = ""
+        environment_variables = ""
+        labels = ""
+        ports = ""
+        for port in item['ports']:
+            ports += "-p " + port['source'] + ":" + port['destination'] + " "
+        self.docker.dial.lineEdit_ports.setText(ports)
+
+        for bind in item['volumes']:
+            volumes += "-v " + bind.get('destination') + ":" + bind.get('source') + " "
+        self.docker.dial.lineEdit_volumes.setText(volumes)
+
+        for env in item['environmentVariables']:
+            environment_variables += "-e " + env.get('name') + "=" + env.get('value') + " "
+        self.docker.dial.lineEdit_environmentVariables.setText(environment_variables)
+
+        for label in item['labels']:
+            labels += "--" + label.get('name') + "=" + label.get('value') + " "
+        self.docker.dial.lineEdit_labels.setText(labels)
+
+        if item['containerName']:
+            self.docker.dial.checkBox_privileged.setChecked(True)
+
+        self.docker.communicate.refresh_parent.connect(lambda: self.refresh(item, ssh_conn))
+        self.docker.show()
+
+    def refresh(self, item, ssh_conn):
+        # 安装按钮
+        self.install_button.setText("已安装")
+        self.install_button.setStyleSheet("background-color: rgb(102, 221, 121);")
+        self.install_button.setDisabled(True)
+
+
+# docker容器安装
+class InstallDocker(QDialog):
+    def __init__(self, item, ssh_conn):
+        super().__init__()
+        self.dial = docker_install.Ui_Dialog()
+        self.dial.setupUi(self)
+        self.setWindowIcon(QIcon("icons/icons8-docker-48.png"))
+        # 取消
+        self.dial.buttonBoxDockerInstall.rejected.connect(self.reject)
+        # 安装
+        self.dial.buttonBoxDockerInstall.accepted.connect(lambda: self.install_docker(item, ssh_conn))
+
+        # 创建一个 Communicate 实例
+        self.communicate = Communicate()
+        # 在对话框关闭时发射信号
+        self.finished.connect(self.on_finished)
+
+    @Slot(int)
+    def on_finished(self, result):
+        # 当对话框关闭时发射信号
+        self.communicate.refresh_parent.emit()
+
+    def install_docker(self, item, ssh_conn):
+        try:
+            container_name = self.dial.lineEdit_containerName.text()
+            image = self.dial.lineEdit_Image.text()
+            volumes = self.dial.lineEdit_volumes.text()
+            environment = self.dial.lineEdit_environmentVariables.text()
+            labels = self.dial.lineEdit_labels.text()
+            ports = self.dial.lineEdit_ports.text()
+            cmd_ = item['cmd']
+
+            formatter = HtmlFormatter(style='rrt', noclasses=True)
+
+            privileged = ""
+            if self.dial.checkBox_privileged.isChecked():
+                privileged = "--privileged=true"
+
+            cmd1 = "docker pull " + image
+            ack = ssh_conn.exec(cmd=cmd1, pty=False)
+            highlighted = highlight(ack, PythonLexer(), formatter)
+            self.dial.textBrowserDockerInout.append(highlighted)
+            if ack:
+                #  创建宿主机挂载目录
+                cmd_volumes = ""
+                for bind in item['volumes']:
+                    cmd_volumes += f"mkdir -p " + bind.get('destination') + " "
+                ssh_conn.exec(cmd=cmd_volumes, pty=False)
+
+                # 创建临时容器
+                image_str = f"{image}".split(":", 1)
+                ports_12_chars = f"{ports}"[:12]
+                cmd2 = f"docker run {ports_12_chars} --name {container_name} -d {image_str[0]}"
+                ack = ssh_conn.exec(cmd=cmd2, pty=False)
+                # 睡眠一秒
+                time.sleep(1)
+                highlighted = highlight(ack, PythonLexer(), formatter)
+                self.dial.textBrowserDockerInout.append(highlighted)
+                if ack:
+                    for bind in item['volumes']:
+                        source = bind.get('source')
+                        cp = bind.get('cp')
+                        cmd3 = f"docker cp {container_name}:{source}/ {cp}" + " "
+                        ack = ssh_conn.exec(cmd=cmd3, pty=False)
+                        highlighted = highlight(ack, PythonLexer(), formatter)
+                        self.dial.textBrowserDockerInout.append(highlighted)
+
+                    cmd_stop = f"docker stop {container_name}"
+                    ack = ssh_conn.exec(cmd=cmd_stop, pty=False)
+                    # 删除临时容器
+                    if ack:
+                        cmd4 = f"docker rm {container_name}"
+                        ack = ssh_conn.exec(cmd=cmd4, pty=False)
+                        self.dial.textBrowserDockerInout.append(ack)
+
+            cmd = f"docker run -d --name {container_name} {environment} {ports} {volumes} {labels} {privileged} {image} {cmd_}"
+            ack = ssh_conn.exec(cmd=cmd, pty=False)
+            highlighted = highlight(ack, PythonLexer(), formatter)
+            self.dial.textBrowserDockerInout.append(highlighted)
+
+        except Exception as e:
+            print(f"安装失败：{e}")
+            return 'error'
+        print("安装成功")
 
 
 if __name__ == '__main__':

@@ -3,14 +3,32 @@ import time
 
 
 class DevicInfo:
-    def __init__(self, username, password, host):
+    def __init__(self, username, password, host, key_type, key_file):
         super(DevicInfo, self).__init__()
-        self.username, self.password, self.host = username, password, host
+        self.username, self.password, self.host, self.key_type, self.key_file = username, password, host, \
+            key_type, key_file
         self.cpu_use, self.mem_use, self.disk_use = 0, 0, 0
         self.docker_info = []
+        # 加载私钥
+        if key_type == 'Ed25519Key':
+            # ssh-ed25519
+            self.private_key = paramiko.Ed25519Key.from_private_key_file(key_file)
+        elif key_type == 'RSAKey':
+            self.private_key = paramiko.RSAKey.from_private_key_file(key_file)
+        elif key_type == 'ECDSAKey':
+            self.private_key = paramiko.ECDSAKey.from_private_key_file(key_file)
+        elif key_type == 'DSSKey':
+            self.private_key = paramiko.DSSKey.from_private_key_file(key_file)
+        elif key_type == '':
+            self.private_key = ''
         self.conn = paramiko.SSHClient()
         self.conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.conn.connect(username=username, password=password, hostname=host.split(':')[0], port=host.split(':')[1])
+        if self.key_type != '':
+            self.conn.connect(username=username, pkey=self.private_key, hostname=host.split(':')[0],
+                              port=host.split(':')[1])
+        else:
+            self.conn.connect(username=username, password=password, hostname=host.split(':')[0],
+                              port=host.split(':')[1])
         self.close_sig = 1
 
     @staticmethod
