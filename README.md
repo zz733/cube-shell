@@ -15,7 +15,7 @@
 - 创建文件
 - 删除文件和文件夹（支持批量删除）
 
-![1.png](https://www.img520.com/QOBNQP.png)
+![cube-shell-1.png](https://www.img520.com/52GxxQ.png)
 
 **2.支持ssh协议远程操作linux系统**
 - 可以进行终端操作
@@ -125,4 +125,4 @@ python setup.py py2app --strip --optimize=2
 4.  新建 Pull Request
 
 #### 有任何不懂的可以加交流群
-![输入图片说明](test/WechatIMG25.jpg)
+![cube-shell-weixin.png](https://www.img520.com/V2Ax6I.png)
