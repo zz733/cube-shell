@@ -15,7 +15,7 @@
 - 创建文件
 - 删除文件和文件夹（支持批量删除）
 
-![输入图片说明](https://i.postimg.cc/FHYnN2CZ/1.png)
+![1.png](https://www.img520.com/QOBNQP.png)
 
 **2.支持ssh协议远程操作linux系统**
 - 可以进行终端操作
