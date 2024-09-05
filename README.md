@@ -15,7 +15,7 @@
 - 创建文件
 - 删除文件和文件夹（支持批量删除）
 
-![cube-shell-1.png](https://www.img520.com/52GxxQ.png)
+![输入图片说明](docs/images/1.png)
 
 **2.支持ssh协议远程操作linux系统**
 - 可以进行终端操作
