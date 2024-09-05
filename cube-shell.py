@@ -966,8 +966,10 @@ class AddConfigUi(QDialog):
         super().__init__()
         self.dial = add_config.Ui_addConfig()
         self.dial.setupUi(self)
-        # 保持弹窗置顶
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        if platform.system() == 'Darwin':
+            # 保持弹窗置顶
+            # Mac 不设置，弹层会放主窗口的后面
+            self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         self.dial.pushButton_3.setEnabled(False)
         self.dial.lineEdit.setEnabled(False)
         self.setWindowIcon(QIcon("Resources/icon.ico"))
