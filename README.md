@@ -2,7 +2,7 @@
 
 #### 介绍
 
-![输入图片说明](docs/images/doc_logo.png)
+![输入图片说明](docs/images/docs-log.png)
 
 `cube-shell`是`linux` 服务器远程运维管理工具，可以取代Xshell、XSftp、MobaXterm 等工具对服务器进行管理，`cube-shell` 简洁且强大。市面上大多数ssh客户端工具都是集成了很多没有用的菜单，而且ui设计十分复杂，对于初用者不太友好。
 
