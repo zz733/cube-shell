@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1522, 678)
+        MainWindow.resize(988, 678)
         MainWindow.setFocusPolicy(QtCore.Qt.NoFocus)
         self.centralwidget = QWidget(MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -77,7 +77,7 @@ class Ui_MainWindow(object):
         self.splitter_3.addWidget(self.gridLayoutWidget)
         self.splitter_255 = QSplitter(self.splitter_3)
         self.splitter_255.setObjectName(u"splitter_255")
-        self.splitter_255.setMinimumSize(QSize(0, 0))
+        #self.splitter_255.setMinimumSize(QSize(0, 0))
         self.splitter_255.setMaximumSize(QSize(16777215, 16777215))
         self.splitter_255.setCursor(QCursor(Qt.CursorShape.SizeHorCursor))
         self.splitter_255.setMouseTracking(False)
@@ -171,7 +171,7 @@ class Ui_MainWindow(object):
         self.initKey = QPlainTextEdit(self.gridLayoutWidget_2)
         self.initKey.setEnabled(False)
         self.initKey.setObjectName(u"initKey")
-        self.initKey.setMinimumSize(QSize(260, 50))
+        # self.initKey.setMinimumSize(QSize(260, 50))
 
         self.horizontalLayout.addWidget(self.initKey)
 
@@ -298,7 +298,7 @@ class Ui_MainWindow(object):
         self.splitter = QSplitter(self.gridLayoutWidget_3)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setEnabled(True)
-        self.splitter.setMinimumSize(QSize(888, 0))
+        self.splitter.setMinimumSize(QSize(666, 0))
         self.splitter.setSizeIncrement(QSize(0, 0))
         self.splitter.setBaseSize(QSize(0, 0))
         self.splitter.setCursor(QCursor(Qt.CursorShape.SizeVerCursor))
@@ -322,7 +322,7 @@ class Ui_MainWindow(object):
         font.setPointSize(14)
         self.Shell.setFont(font)
         self.Shell.setObjectName(u"Shell")
-        self.Shell.setMinimumSize(QSize(234, 338))
+        #self.Shell.setMinimumSize(QSize(234, 338))
         self.Shell.setSizeIncrement(QSize(0, 0))
         self.Shell.setMouseTracking(True)
         self.Shell.setReadOnly(True)
