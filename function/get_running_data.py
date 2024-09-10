@@ -1,5 +1,4 @@
 import paramiko
-import time
 
 
 class DevicInfo:
@@ -76,7 +75,7 @@ class DevicInfo:
                     break
                 stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='sudo cat /proc/stat')
                 cpuinfo1 = stdout.read().decode('utf8')
-                time.sleep(1)
+                #time.sleep(1)
 
                 stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='sudo cat /proc/stat')
                 cpuinfo2 = stdout.read().decode('utf8')
@@ -98,7 +97,7 @@ class DevicInfo:
                 self.disk_use = self.disk_use_data(diskinfo)
 
                 self.docker_info = parse_docker_ps_output(procinfo)
-                time.sleep(1)
+                #time.sleep(1)
             except EOFError as e:
                 print(f"EOFError: {e}")
             except Exception as e:

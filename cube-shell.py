@@ -181,7 +181,10 @@ class MainDialog(QMainWindow):
             try:
                 self.ssh_conn = ssh_func.SshClient(host.split(':')[0], int(host.split(':')[1]), username, password,
                                                    key_type, key_file)
-                self.ssh_conn.connect()
+
+                thread_connect = threading.Thread(target=self.ssh_conn.connect())
+                thread_connect.start()
+                # self.ssh_conn.connect()
                 self.ssh_conn.open_sftp()
             except Exception as e:
                 self.ui.Shell.setPlaceholderText(str(e))
@@ -205,16 +208,17 @@ class MainDialog(QMainWindow):
                 self.ui.iport.setEnabled(True)
                 self.ui.Shell.setEnabled(True)
                 self.ui.timezoneButton.setEnabled(True)
-                th1 = threading.Thread(target=self.ssh_conn.receive, daemon=True)
-                th1.start()
+                # th1 = threading.Thread(target=self.ssh_conn.receive, daemon=True)
+                # th1.start()
+                self.ssh_conn.receive('')
 
                 self.getsysinfo = get_running_data.DevicInfo(username=conf[0], password=conf[1], host=conf[2],
                                                              key_type=key_type, key_file=key_file)
                 th3 = threading.Thread(target=self.getsysinfo.get_datas, daemon=True)
                 th3.start()
-                self.flush()
+                self.refreshXterm()
                 self.flushSysInfo()
-                time.sleep(1.5)  # 延迟一秒
+                # time.sleep(1.5)  # 延迟一秒
                 self.refreshDokerInfo()
                 self.flushDokerInfo()
                 self.refreshDirs()
@@ -270,7 +274,7 @@ class MainDialog(QMainWindow):
 
     # 断开服务器
     def disconnect(self):
-        self.timer.stop()
+        # self.timer.stop()
         self.timer1.stop()
         self.timer2.stop()
 
@@ -315,7 +319,7 @@ class MainDialog(QMainWindow):
     # 定时刷新shell
     def flush(self):
         self.timer = QTimer()
-        self.timer.start(15)
+        self.timer.start(1)
         self.timer.timeout.connect(self.refreshXterm)
 
     # 刷新shell
@@ -348,25 +352,25 @@ class MainDialog(QMainWindow):
     def keyReleaseEvent(self, a0: QKeyEvent) -> None:
         try:
             if a0.key() == 16777219:
-                self.ssh_conn.send(b'\x08')
+                self.ssh_conn.receive(b'\x08')
             elif a0.key() == 16777219:
-                self.ssh_conn.send(b'\x09')
+                self.ssh_conn.receive(b'\x09')
             elif a0.key() == 16777235:
-                self.ssh_conn.send(b'\x1b[A')
+                self.ssh_conn.receive(b'\x1b[A')
             elif a0.key() == 16777237:
-                self.ssh_conn.send(b'\x1b[B')
+                self.ssh_conn.receive(b'\x1b[B')
             elif a0.key() == 16777234:
-                self.ssh_conn.send(b'\x1b[D')
+                self.ssh_conn.receive(b'\x1b[D')
             elif a0.key() == 16777236:
-                self.ssh_conn.send(b'\x1b[C')
+                self.ssh_conn.receive(b'\x1b[C')
             elif a0.key() == 16777220:
                 self.ssh_conn.buffer1 = ['▉', '']
-                self.ssh_conn.send(b'\r')
+                self.ssh_conn.receive(b'\r')
             else:
-                self.ssh_conn.send(a0.text().encode('utf8'))
+                self.ssh_conn.receive(a0.text().encode('utf8'))
+            self.refreshXterm()
         except Exception as e:
             print(f'连接已经关闭，不能再进行操作{e}')
-            # self.ui.result.append(e)
 
     def inputMethodEvent(self, a0: QInputMethodEvent) -> None:
         cmd = a0.commitString()
