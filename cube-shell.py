@@ -146,7 +146,7 @@ class MainDialog(QMainWindow):
         menu.addAction(paste_action)
 
         # 显示菜单
-        menu.exec_(event.globalPos())
+        menu.exec(event.globalPos())
 
     # 复制文本
     def copy(self):
@@ -160,7 +160,8 @@ class MainDialog(QMainWindow):
         # 从剪贴板获取文本，并粘贴到 QTextBrowser
         clipboard = QApplication.clipboard()
         clipboard_text = clipboard.text()
-        self.ssh_conn.send(clipboard_text.encode('utf8'))
+        self.ssh_conn.receive(clipboard_text.encode('utf8'))
+        self.refreshXterm()
 
     # 连接服务器
     def connect(self):
