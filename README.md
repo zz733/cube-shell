@@ -127,5 +127,8 @@ python setup.py py2app --strip --optimize=2
 3.  提交代码
 4.  新建 Pull Request
 
+#### 视频教程地址
+[cube-shell-video](https://mp.weixin.qq.com/s/ntDuDipnCqN4v2Y4Urzo6w)
+
 #### 有任何不懂的可以加交流群
-![cube-shell-weixin.png](https://www.img520.com/V2Ax6I.png)
+![cube-shell-weixin.png](docs/images/weixin.png)
