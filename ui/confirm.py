@@ -9,7 +9,10 @@
 
 
 from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtGui import QFont
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QCursor
+
+from style.style import SuccessButtonStyle, DangerButtonStyle
 
 
 class Ui_confirm(object):
@@ -19,8 +22,6 @@ class Ui_confirm(object):
         self.label = QtWidgets.QLabel(confirm)
         self.label.setGeometry(QtCore.QRect(40, 30, 221, 18))
         font = QtGui.QFont()
-        #font.setFamily("等线")
-        font.setPointSize(14)
         font.setBold(False)
         font.setWeight(QFont.Weight.Normal)
         self.label.setFont(font)
@@ -28,9 +29,13 @@ class Ui_confirm(object):
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setObjectName("label")
         self.save = QtWidgets.QPushButton(confirm)
+        self.save.setCursor(QCursor(Qt.PointingHandCursor))
+        self.save.setStyleSheet(SuccessButtonStyle)
         self.save.setGeometry(QtCore.QRect(20, 70, 93, 28))
         self.save.setObjectName("save")
         self.drop = QtWidgets.QPushButton(confirm)
+        self.drop.setCursor(QCursor(Qt.PointingHandCursor))
+        self.drop.setStyleSheet(DangerButtonStyle)
         self.drop.setGeometry(QtCore.QRect(170, 70, 93, 28))
         self.drop.setObjectName("drop")
 
