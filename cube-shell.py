@@ -1,6 +1,7 @@
 import os
 import pickle
 import platform
+import re
 import sys
 import threading
 import time
@@ -17,14 +18,45 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
 from qdarkstyle import DarkPalette, LightPalette
 
-from function import ssh_func, get_running_data, util
+from core.mux import mux
+from function import get_running_data, util
+from function.ssh_func import SshClient
 from function.util import format_file_size, has_valid_suffix
 from style.style import updateColor
 from ui import add_config, text_editor, confirm, main, docker_install
 
+keymap = {
+    Qt.Key_Backspace: chr(127).encode(),
+    Qt.Key_Escape: chr(27).encode(),
+    Qt.Key_AsciiTilde: chr(126).encode(),
+    Qt.Key_Up: b'\x1b[A',
+    Qt.Key_Down: b'\x1b[B',
+    Qt.Key_Left: b'\x1b[D',
+    Qt.Key_Right: b'\x1b[C',
+    Qt.Key_PageUp: "~1".encode(),
+    Qt.Key_PageDown: "~2".encode(),
+    Qt.Key_Home: "~H".encode(),
+    Qt.Key_End: "~F".encode(),
+    Qt.Key_Insert: "~3".encode(),
+    Qt.Key_Delete: "~4".encode(),
+    Qt.Key_F1: "~a".encode(),
+    Qt.Key_F2: "~b".encode(),
+    Qt.Key_F3: "~c".encode(),
+    Qt.Key_F4: "~d".encode(),
+    Qt.Key_F5: "~e".encode(),
+    Qt.Key_F6: "~f".encode(),
+    Qt.Key_F7: "~g".encode(),
+    Qt.Key_F8: "~h".encode(),
+    Qt.Key_F9: "~i".encode(),
+    Qt.Key_F10: "~j".encode(),
+    Qt.Key_F11: "~k".encode(),
+    Qt.Key_F12: "~l".encode(),
+}
+
 
 # 主界面逻辑
 class MainDialog(QMainWindow):
+
     def __init__(self, qt_app):
         super().__init__()
         self.app = qt_app  # 将 app 传递并设置为类属性
@@ -48,12 +80,16 @@ class MainDialog(QMainWindow):
 
         self.ssh_conn = None
         self.sign = b''
-        self.timer, self.timer1, self.timer2 = None, None, None
+        self.timer1, self.timer2 = None, None
         self.getsysinfo = None
         self.dir_tree_now = []
         self.pwd = ''
         self.file_name = ''
         self.fileEvent = ''
+
+        self.buffer = ""
+        self.prompt_pos = 0
+        self.prompt = ""
 
         self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
 
@@ -80,6 +116,7 @@ class MainDialog(QMainWindow):
         self.ui.treeWidget333.customContextMenuRequested.connect(self.treeDocker)
 
         self.isConnected = False
+        self.startTimer(50)
 
     def eventFilter(self, source, event):
         """
@@ -114,6 +151,7 @@ class MainDialog(QMainWindow):
 
         return super().eventFilter(source, event)
 
+    # 在矩形内选择项目
     def select_items_in_rect(self, rect):
         # 清除所有选择
         for i in range(self.ui.treeWidget.topLevelItemCount()):
@@ -160,18 +198,17 @@ class MainDialog(QMainWindow):
         # 从剪贴板获取文本，并粘贴到 QTextBrowser
         clipboard = QApplication.clipboard()
         clipboard_text = clipboard.text()
-        self.ssh_conn.receive(clipboard_text.encode('utf8'))
-        self.refreshXterm()
+        self.send(clipboard_text.encode('utf8'))
 
     # 连接服务器
     def connect(self):
+
         focus = self.ui.treeWidget.currentIndex().row()
         if focus != -1:
             name = self.ui.treeWidget.topLevelItem(focus).text(0)
-            with open('config.dat', 'rb') as c:
+            with open('conf/config.dat', 'rb') as c:
                 conf = pickle.loads(c.read())[name]
                 c.close()
-            print(len(conf))
 
             username, password, host, key_type, key_file = '', '', '', '', ''
 
@@ -179,77 +216,77 @@ class MainDialog(QMainWindow):
                 username, password, host = conf[0], conf[1], conf[2]
             else:
                 username, password, host, key_type, key_file = conf[0], conf[1], conf[2], conf[3], conf[4]
-            try:
-                self.ssh_conn = ssh_func.SshClient(host.split(':')[0], int(host.split(':')[1]), username, password,
-                                                   key_type, key_file)
 
-                thread_connect = threading.Thread(target=self.ssh_conn.connect())
-                thread_connect.start()
-                # self.ssh_conn.connect()
-                self.ssh_conn.open_sftp()
+            # 检查服务器是否可以连接
+            if not util.check_server_accessibility(host.split(':')[0], int(host.split(':')[1])):
+                QMessageBox.warning(self, "连接超时", "服务器无法连接，请检查网络或服务器状态。")
+                return
+
+            try:
+                self.ssh_conn = SshClient(host.split(':')[0], int(host.split(':')[1]), username, password,
+                                          key_type, key_file)
+                # 创建一个线程来处理 SSH 连接，以避免阻塞主线程。
+                threading.Thread(target=self.ssh_conn.connect).start()
+
+                self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = username, password, \
+                    host, key_type, key_file
+                self.init_sftp()
+
             except Exception as e:
                 self.ui.Shell.setPlaceholderText(str(e))
-            self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = username, password, \
-                host, key_type, key_file
-            if self.ssh_conn.session is not None:
-                self.isConnected = True
-                self.ui.discButton.setEnabled(True)
-                self.ui.seeOnline.setEnabled(True)
-                self.ui.result.setEnabled(True)
-                self.ui.lanIP.setEnabled(True)
-                self.ui.wanIP.setEnabled(True)
-                self.ui.gateway.setEnabled(True)
-                self.ui.setWan.setEnabled(True)
-                self.ui.setLan.setEnabled(True)
-                self.ui.initKey.setEnabled(True)
-                self.ui.init.setEnabled(True)
-                self.ui.webview.setEnabled(True)
-                self.ui.showPort.setEnabled(True)
-                self.ui.webview.setEnabled(True)
-                self.ui.iport.setEnabled(True)
-                self.ui.Shell.setEnabled(True)
-                self.ui.timezoneButton.setEnabled(True)
-                # th1 = threading.Thread(target=self.ssh_conn.receive, daemon=True)
-                # th1.start()
-                self.ssh_conn.receive('')
-
-                self.getsysinfo = get_running_data.DevicInfo(username=conf[0], password=conf[1], host=conf[2],
-                                                             key_type=key_type, key_file=key_file)
-                th3 = threading.Thread(target=self.getsysinfo.get_datas, daemon=True)
-                th3.start()
-                self.refreshXterm()
-                self.flushSysInfo()
-                # time.sleep(1.5)  # 延迟一秒
-                self.refreshDokerInfo()
-                self.flushDokerInfo()
-                self.refreshDirs()
-
-                # 读取json文件
-                items = util.read_json_file("function/docker.json")
-                # 每行最多四个小块
-                max_columns = 4
-                # 遍历列表，创建小块并添加到网格布局中
-                for index, item in enumerate(items):
-                    row = index // max_columns
-                    col = index % max_columns
-
-                    # 创建外部容器
-                    container_widget = QWidget()
-                    container_layout = QVBoxLayout()
-                    container_widget.setLayout(container_layout)
-                    container_layout.setContentsMargins(0, 0, 0, 0)  # 去掉布局的内边距
-                    container_widget.setStyleSheet("background-color: rgb(187, 232, 221);")
-
-                    # 创建自定义小块并添加到外部容器
-                    widget = CustomWidget(item, self.ssh_conn)
-                    container_layout.addWidget(widget)
-
-                    self.ui.gridLayout_3.addWidget(container_widget, row, col)
-
-            else:
-                pass
         else:
             self.alarm('请选择一台设备！')
+
+    # 初始化sftp和控制面板
+    def init_sftp(self):
+        self.isConnected = True
+        self.ui.discButton.setEnabled(True)
+        self.ui.seeOnline.setEnabled(True)
+        self.ui.result.setEnabled(True)
+        self.ui.lanIP.setEnabled(True)
+        self.ui.wanIP.setEnabled(True)
+        self.ui.gateway.setEnabled(True)
+        self.ui.setWan.setEnabled(True)
+        self.ui.setLan.setEnabled(True)
+        self.ui.initKey.setEnabled(True)
+        self.ui.init.setEnabled(True)
+        self.ui.webview.setEnabled(True)
+        self.ui.showPort.setEnabled(True)
+        self.ui.webview.setEnabled(True)
+        self.ui.iport.setEnabled(True)
+        self.ui.Shell.setEnabled(True)
+        self.ui.timezoneButton.setEnabled(True)
+        self.getsysinfo = get_running_data.DevicInfo(username=self.ssh_username, password=self.ssh_password,
+                                                     host=self.ssh_ip, key_type=self.key_type,
+                                                     key_file=self.key_file)
+
+        threading.Thread(target=self.getsysinfo.get_datas, daemon=True).start()
+        self.flushSysInfo()
+        self.refreshDokerInfo()
+        self.flushDokerInfo()
+        self.refreshDirs()
+
+        # 读取json文件
+        items = util.read_json_file("conf/docker.json")
+        # 每行最多四个小块
+        max_columns = 4
+        # 遍历列表，创建小块并添加到网格布局中
+        for index, item in enumerate(items):
+            row = index // max_columns
+            col = index % max_columns
+
+            # 创建外部容器
+            container_widget = QWidget()
+            container_layout = QVBoxLayout()
+            container_widget.setLayout(container_layout)
+            container_layout.setContentsMargins(0, 0, 0, 0)  # 去掉布局的内边距
+            container_widget.setStyleSheet("background-color: rgb(187, 232, 221);")
+
+            # 创建自定义小块并添加到外部容器
+            widget = CustomWidget(item, self.ssh_conn)
+            container_layout.addWidget(widget)
+
+            self.ui.gridLayout_3.addWidget(container_widget, row, col)
 
     # 后台获取信息，不打印至程序界面
     def getData2(self, cmd='', pty=False):
@@ -275,12 +312,12 @@ class MainDialog(QMainWindow):
 
     # 断开服务器
     def disconnect(self):
-        # self.timer.stop()
         self.timer1.stop()
         self.timer2.stop()
 
         self.ssh_conn.term_data = b''
-        self.ssh_conn.diconnect()
+        self.ssh_conn.disconnect()
+        self.ssh_conn.close()
         self.isConnected = False
         self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
         self.ui.discButton.setDisabled(True)
@@ -317,66 +354,127 @@ class MainDialog(QMainWindow):
         self.getsysinfo.disconnect()
         self.refreshConf()
 
-    # 定时刷新shell
-    def flush(self):
-        self.timer = QTimer()
-        self.timer.start(1)
-        self.timer.timeout.connect(self.refreshXterm)
-
-    # 刷新shell
-    def refreshXterm(self):
-        if self.isConnected is True:
-            if self.isConnected is True and self.sign != self.ssh_conn.buffer3:
-                to_show = self.ssh_conn.buffer3
-                # 使用Pygments进行语法高亮
-                formatter = HtmlFormatter(style='rrt', noclasses=True, bg_color='#ffffff')
-                self.ui.Shell.setStyleSheet("background-color: rgb(0, 0, 0);")
-
-                # formatter = HtmlFormatter(style='paraiso-dark', noclasses=True, bg_color='#ffffff')
-                # formatter = HtmlFormatter(style='native', noclasses=True, bg_color='#ffffff')
-                # formatter = HtmlFormatter(style='monokai', noclasses=True, bg_color='#ffffff')
-
-                # formatter = HtmlFormatter(style='lightbulb', noclasses=True, bg_color='#ffffff')
-
-                filtered_data = to_show.replace("\0", " ")
-                # 高亮代码
-                highlighted2 = highlight(filtered_data, PythonLexer(), formatter)
-
-                # 将HTML插入QTextBrowser
-                self.ui.Shell.setHtml(highlighted2)
-                self.ui.Shell.moveCursor(QTextCursor.End)
-                self.sign = self.ssh_conn.buffer3
-            elif self.sign == self.ssh_conn.buffer3:
-                pass
-
-    # 键盘事件， shell输入
-    def keyReleaseEvent(self, a0: QKeyEvent) -> None:
+    def timerEvent(self, event):
         try:
-            if a0.key() == 16777219:
-                self.ssh_conn.receive(b'\x08')
-            elif a0.key() == 16777219:
-                self.ssh_conn.receive(b'\x09')
-            elif a0.key() == 16777235:
-                self.ssh_conn.receive(b'\x1b[A')
-            elif a0.key() == 16777237:
-                self.ssh_conn.receive(b'\x1b[B')
-            elif a0.key() == 16777234:
-                self.ssh_conn.receive(b'\x1b[D')
-            elif a0.key() == 16777236:
-                self.ssh_conn.receive(b'\x1b[C')
-            elif a0.key() == 16777220:
-                self.ssh_conn.buffer1 = ['▉', '']
-                self.ssh_conn.receive(b'\r')
+            if not self.ssh_conn.screen.dirty:
+                if self.ssh_conn.buffer_write:
+                    self.update_terminal()
+                    self.ssh_conn.buffer_write = b''
+                return
+
+            self.update_terminal()
+            self.update()
+            # self.sign = self.ssh_conn.buffer3
+        except:
+            pass
+            # traceback.print_exc()
+
+    # 更新终端输出
+    def update_terminal(self):
+        self.ui.Shell.moveCursor(QTextCursor.End)
+        screen = self.ssh_conn.screen
+        # 使用 filter() 函数过滤空行
+        # 添加光标表示
+        cursor_x = screen.cursor.x
+        cursor_y = screen.cursor.y
+        lines = screen.display
+        if cursor_y < len(lines):
+            line = lines[cursor_y]
+            lines[cursor_y] = line[:cursor_x] + '▉' + line[cursor_x:]
+        filtered_lines = list(filter(lambda x: x.strip(), lines))
+
+        terminal_str = '\n'.join(filtered_lines)
+
+        self.ui.Shell.clear()
+        # 使用Pygments进行语法高亮
+        formatter = HtmlFormatter(style='rrt', noclasses=True, bg_color='#ffffff')
+        self.ui.Shell.setStyleSheet("background-color: rgb(0, 0, 0);")
+        filtered_data = terminal_str.rstrip().replace("\0", " ")
+
+        pattern = r'\s+(?=\n)'
+        result = re.sub(pattern, '', filtered_data)
+        special_lines = util.remove_special_lines(result)
+        replace = special_lines.replace("                        ", "")
+
+        # 第一次打开渲染banner
+        if "Last login:" in terminal_str:
+            # 高亮代码
+            highlighted2 = highlight(util.BANNER + replace, PythonLexer(), formatter)
+        else:
+            # 高亮代码
+            highlighted2 = highlight(replace, PythonLexer(), formatter)
+
+        # 将HTML插入QTextBrowser
+        self.ui.Shell.setHtml(highlighted2)
+
+        self.ui.Shell.moveCursor(QTextCursor.End)
+
+        # 如果没有这串代码，执行器就会疯狂执行代码
+        self.ssh_conn.screen.dirty.clear()
+
+    def keyPressEvent(self, event: QKeyEvent):
+        text = str(event.text())
+        key = event.key()
+
+        modifiers = event.modifiers()
+        ctrl = modifiers == Qt.ControlModifier
+        if ctrl and key == Qt.Key_Plus:
+            self.zoom_in()
+        elif ctrl and key == Qt.Key_Minus:
+            self.zoom_out()
+        else:
+            if text and key != Qt.Key_Backspace:
+                self.send(text.encode("utf-8"))
             else:
-                self.ssh_conn.receive(a0.text().encode('utf8'))
-            self.refreshXterm()
-        except Exception as e:
-            print(f'连接已经关闭，不能再进行操作{e}')
+                s = keymap.get(key)
+                if s:
+                    self.send(s)
+        event.accept()
+        if self.sign:
+            self.sign = b''
+
+    def keyReleaseEvent(self, event: QKeyEvent):
+        text = str(event.text())
+        key = event.key()
+
+        if text and key == Qt.Key_Space:
+            self.send(text.encode("utf-8"))
+        elif text and key == Qt.Key_Tab:
+            self.send(text.encode("utf-8"))
+        elif key == Qt.Key_Up:
+            # 点击上键查询历史命令
+            self.send(b'\x1b[A')
+        elif key == Qt.Key_Down:
+            # 点击下键查询历史命令
+            self.send(b'\x1b[B')
+        elif key == Qt.Key_Left:
+            self.ssh_conn.buffer_write = b'\x1b[D'
+            self.send(b'\x1b[D')
+            self.ssh_conn.screen.cursor.x -= 1
+        elif key == Qt.Key_Right:
+            self.ssh_conn.buffer_write = b'\x1b[C'
+            self.send(b'\x1b[C')
+            self.ssh_conn.screen.cursor.x += 1
+
+    def send(self, data):
+        self.ssh_conn.write(data)
+
+    def closeEvent(self, event):
+        """
+         窗口关闭事件 当存在通道的时候关闭通道
+         不存在时结束多路复用器的监听
+        :param event: 关闭事件
+        :return: None
+        """
+        if self.ssh_conn:
+            self.ssh_conn.close()
+        else:
+            mux.stop()
 
     def inputMethodEvent(self, a0: QInputMethodEvent) -> None:
         cmd = a0.commitString()
         if cmd != '':
-            self.ssh_conn.send(cmd.encode('utf8'))
+            self.send(cmd.encode('utf8'))
 
     # 服务器运行命令并获取输出
     def getRunData(self, cmd=''):
@@ -507,12 +605,12 @@ class MainDialog(QMainWindow):
 
     # 刷新设备列表
     def refreshConf(self):
-        if not os.path.exists('config.dat'):
-            with open('config.dat', 'wb') as c:
+        if not os.path.exists('conf/config.dat'):
+            with open('conf/config.dat', 'wb') as c:
                 start_dic = {}
                 c.write(pickle.dumps(start_dic))
                 c.close()
-        with open('config.dat', 'rb') as c:
+        with open('conf/config.dat', 'rb') as c:
             dic = pickle.loads(c.read())
             c.close()
         i = 0
@@ -662,10 +760,10 @@ class MainDialog(QMainWindow):
         focus = self.ui.treeWidget.currentIndex().row()
         if focus != -1:
             name = self.ui.treeWidget.topLevelItem(focus).text(0)
-            with open('config.dat', 'rb') as c:
+            with open('conf/config.dat', 'rb') as c:
                 conf = pickle.loads(c.read())
                 c.close()
-            with open('config.dat', 'wb') as c:
+            with open('conf/config.dat', 'wb') as c:
                 del conf[name]
                 c.write(pickle.dumps(conf))
                 c.close()
@@ -796,7 +894,7 @@ class MainDialog(QMainWindow):
             for key, value in rm_dict.items():
                 try:
                     if value:
-                        deleteFolder(sftp, self.pwd + '/' + key)
+                        util.deleteFolder(sftp, self.pwd + '/' + key)
                     else:
                         sftp.remove(self.pwd + '/' + key)
                     self.refreshDirs()
@@ -814,7 +912,7 @@ class MainDialog(QMainWindow):
             container_id = text[:12]
             data_ = self.getData2('sudo docker stop ' + container_id)
             print('stop----', data_)
-            time.sleep(2)  # 延迟一秒
+            time.sleep(1)  # 延迟一秒
             self.refreshDokerInfo()
 
     # 重启docker容器
@@ -826,7 +924,7 @@ class MainDialog(QMainWindow):
             container_id = text[:12]
             data_ = self.getData2('sudo docker restart ' + container_id)
             print('restart----', data_)
-            time.sleep(2)  # 延迟一秒
+            time.sleep(1)  # 延迟一秒
             self.refreshDokerInfo()
 
     # 删除docker容器
@@ -838,7 +936,7 @@ class MainDialog(QMainWindow):
             container_id = text[:12]
             data_ = self.getData2('sudo docker rm ' + container_id)
             print('rm----', data_)
-            time.sleep(2)  # 延迟一秒
+            time.sleep(1)  # 延迟一秒
             self.refreshDokerInfo()
 
     # 删除文件夹
@@ -912,7 +1010,8 @@ class MainDialog(QMainWindow):
         msg_box.exec()
 
     def inputMethodQuery(self, a0):
-        print(a0)
+        pass
+        # print(a0)
 
     # 设置主题
     def setDarkTheme(self):
@@ -926,42 +1025,6 @@ class MainDialog(QMainWindow):
             self.setLightTheme()
         else:
             self.setDarkTheme()
-
-
-# 删除文件夹
-def deleteFolder(sftp, path):
-    """
-        递归删除远程服务器上的文件夹及其内容
-        :param sftp: 远程服务器的连接对象
-        :param path: 待删除的文件夹路径
-        """
-    try:
-        # 获取文件夹中的文件和子文件夹列表
-        files = sftp.listdir(path)
-    except IOError:
-        # The path does not exist or is not a directory
-        return
-
-    # 遍历文件和子文件夹列表
-    for file in files:
-        # 拼接完整的文件或文件夹路径
-        filepath = f"{path}/{file}"
-        try:
-            # 检查路径是否存在
-            sftp.stat(filepath)
-        except IOError as e:
-            print(f"Failed to remove: {e}")
-            continue
-
-        try:
-            # 删除文件
-            sftp.remove(filepath)  # Delete file
-        except IOError:
-            # 递归调用deleteFolder函数删除子文件夹及其内容
-            deleteFolder(sftp, filepath)
-
-    # 最后删除空文件夹
-    sftp.rmdir(path)
 
 
 # 增加配置逻辑
@@ -999,10 +1062,10 @@ class AddConfigUi(QDialog):
         elif ip == '':
             self.alarm('ip地址不能为空！')
         else:
-            with open('config.dat', 'rb') as c:
+            with open('conf/config.dat', 'rb') as c:
                 conf = pickle.loads(c.read())
                 c.close()
-            with open('config.dat', 'wb') as c:
+            with open('conf/config.dat', 'wb') as c:
                 conf[name] = [username, password, f"{ip}:{prot}", private_key_type, private_key_file]
                 c.write(pickle.dumps(conf))
                 c.close()
@@ -1014,7 +1077,6 @@ class AddConfigUi(QDialog):
             "选择文件",
             "",
             "所有文件 (*);;Python 文件 (*.py);;文本文件 (*.txt)",
-            # options=options
         )
         if file_name:
             self.dial.lineEdit.setText(file_name)

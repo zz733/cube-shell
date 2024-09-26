@@ -20,18 +20,21 @@ DATA_FILES = []
 # checker. Packages in this list are ignored.
 # includes: 第三方库放在这里。
 # plist：其他的app应用配置，熟悉MACOS应用开发的都会非常熟悉这些参数，mac应用info.plist里的参数都可以添加进去
-OPTIONS = {'iconfile': 'icons/logo.icns',
-           'plist': {
-               'CFBundleName': 'cube-shell',  # 应用名
-               'CFBundleDisplayName': 'cube-shell',  # 应用显示名
-               'CFBundleVersion': '1.0.0',  # 应用版本号
-               'CFBundleIdentifier': 'cubeShell',  # 应用包名、唯一标识
-               'NSHumanReadableCopyright': 'Copyright © 2021 SW Felix.Zhao. All rights reserved.',  # 可读版权
-               'includes': ['PySide6.QtGui', 'PySide6.QtCore', 'PySide6.QtWidgets',
-                            'pygments.formatters', 'pygments.lexers.python', 'paramiko']
-           },
-           'packages': ['paramiko', 'pygments', 'cffi'],
-           }
+OPTIONS = {
+    'iconfile': 'icons/logo.icns',
+    'plist': {
+        'CFBundleName': 'cube-shell',  # 应用名
+        'CFBundleDisplayName': 'cube-shell',  # 应用显示名
+        'CFBundleVersion': '1.0.0',  # 应用版本号
+        'CFBundleIdentifier': 'cubeShell',  # 应用包名、唯一标识
+        'NSHumanReadableCopyright': 'Copyright © 2021 SW Felix.Zhao. All rights reserved.',  # 可读版权
+        'includes': ['PySide6.QtGui', 'PySide6.QtCore', 'PySide6.QtWidgets',
+                     'pygments.formatters', 'pygments.lexers.python']
+    },
+    'packages': ['paramiko', 'pygments', 'cffi', 'pyte'],
+    'excludes': ['conf/config.dat'],
+    'resources': ['conf', 'icons'],
+}
 
 setup(
     app=APP,

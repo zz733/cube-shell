@@ -1,4 +1,5 @@
 import json
+import socket
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFileIconProvider
@@ -9,6 +10,16 @@ MAX_BYTES_SIZE = 1024
 MAX_KB_SIZE = 1024 * 1024
 # 小于展示MB，大于或等于展示GB
 MAX_MB_SIZE = 1024 * 1024 * 1024
+
+BANNER = """
+               _                         _            _  _ 
+              | |                       | |          | || |
+   ___  _   _ | |__    ___  ______  ___ | |__    ___ | || |
+  / __|| | | || '_ \  / _ \|______|/ __|| '_ \  / _ \| || |
+ | (__ | |_| || |_) ||  __/        \__ \| | | ||  __/| || |
+  \___| \__,_||_.__/  \___|        |___/|_| |_| \___||_||_|\n 
+欢迎使用 cube-shell SSH 服务器远程管理工具 如有疑问请以在项目主页联系作者\n                                            
+"""
 
 
 # 获取系统默认文件夹图标
@@ -155,3 +166,75 @@ def clear_grid_layout(layout):
         elif layout_item.layout():
             clear_grid_layout(layout_item.layout())  # 递归清空子布局
             layout_item.layout().deleteLater()
+
+
+# 删除文件夹
+def deleteFolder(sftp, path):
+    """
+        递归删除远程服务器上的文件夹及其内容
+        :param sftp: 远程服务器的连接对象
+        :param path: 待删除的文件夹路径
+        """
+    try:
+        # 获取文件夹中的文件和子文件夹列表
+        files = sftp.listdir(path)
+    except IOError:
+        # The path does not exist or is not a directory
+        return
+    # 遍历文件和子文件夹列表
+    for file in files:
+        # 拼接完整的文件或文件夹路径
+        filepath = f"{path}/{file}"
+        try:
+            # 检查路径是否存在
+            sftp.stat(filepath)
+        except IOError as e:
+            print(f"Failed to remove: {e}")
+            continue
+        try:
+            # 删除文件
+            sftp.remove(filepath)  # Delete file
+        except IOError:
+            # 递归调用deleteFolder函数删除子文件夹及其内容
+            deleteFolder(sftp, filepath)
+    # 最后删除空文件夹
+    sftp.rmdir(path)
+
+
+def remove_special_lines(text):
+    # 拆分文本为行
+    lines = text.split('\n')
+    # 用于存储过滤后的行
+    filtered_lines = []
+
+    for line in lines:
+        # 去掉行首和行尾的空白字符
+        stripped_line = line.strip()
+        # 如果行不只包含波浪号或空格，则保留
+        if stripped_line and any(char != '~' for char in stripped_line):
+            filtered_lines.append(line)
+
+    # 重新组合过滤后的行
+    result = '\n'.join(filtered_lines)
+    return result
+
+
+def check_server_accessibility(hostname, port):
+    """
+    快速检查服务器在指定端口上的可访问性。
+
+    :param hostname: 服务器地址
+    :param port: 端口号
+    :return: 如果可访问返回 True，否则返回 False
+    """
+    try:
+        # 使用 socket.create_connection 检查服务器可访问性
+        with socket.create_connection((hostname, port), timeout=1):
+            return True
+    except (socket.timeout, socket.error) as e:
+        print(f"Connection failed: {e}")
+        return False
+
+
+if __name__ == '__main__':
+    check_server_accessibility('124.223.177.55', '22')
