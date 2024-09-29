@@ -12,7 +12,7 @@ from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, S
 from PySide6.QtGui import QIcon, QAction, QTextCursor, QCursor, QCloseEvent, QKeyEvent, QInputMethodEvent, QPixmap, \
     QDragEnterEvent, QDropEvent, QFont, QContextMenuEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QDialog, QMessageBox, QTreeWidgetItem, \
-    QInputDialog, QFileDialog, QTreeWidget, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
+    QInputDialog, QFileDialog, QTreeWidget, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QToolBar
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
@@ -79,7 +79,6 @@ class MainDialog(QMainWindow):
         self.ui.Shell.contextMenuEvent = self.showCustomContextMenu
 
         self.ssh_conn = None
-        self.sign = b''
         self.timer1, self.timer2 = None, None
         self.getsysinfo = None
         self.dir_tree_now = []
@@ -135,11 +134,11 @@ class MainDialog(QMainWindow):
             elif event.type() == QEvent.MouseMove:
                 if self.is_left_selecting:
                     self.selection_rect.setBottomRight(event.pos())
-                    self.select_items_in_rect(self.selection_rect)
+                    self.selectItemsInRect(self.selection_rect)
                     return True
             elif event.type() == QEvent.MouseButtonRelease:
                 if event.button() == Qt.LeftButton:
-                    if event.timestamp() - self.left_click_time < 300:  # 判断是否为单击
+                    if event.timestamp() - self.left_click_time < 200:  # 判断是否为单击
                         self.is_left_selecting = False
                         item = self.ui.treeWidget.itemAt(event.pos())
                         if item:
@@ -152,7 +151,7 @@ class MainDialog(QMainWindow):
         return super().eventFilter(source, event)
 
     # 在矩形内选择项目
-    def select_items_in_rect(self, rect):
+    def selectItemsInRect(self, rect):
         # 清除所有选择
         for i in range(self.ui.treeWidget.topLevelItemCount()):
             item = self.ui.treeWidget.topLevelItem(i)
@@ -170,18 +169,29 @@ class MainDialog(QMainWindow):
     def showCustomContextMenu(self, event: QContextMenuEvent):
         # 创建一个 QMenu 对象
         menu = QMenu(self.ui.Shell)
+        menu.setStyleSheet("""
+                QMenu::item {
+                    padding-left: 5px;  /* 调整图标和文字之间的间距 */
+                }
+                QMenu::icon {
+                    padding-right: 0px; /* 设置图标右侧的间距 */
+                }
+            """)
 
         # 创建复制和粘贴的 QAction 对象
-        copy_action = QAction('复制', self)
-        paste_action = QAction('粘贴', self)
+        copy_action = QAction(QIcon("icons/copy.png"), '复制', self)
+        paste_action = QAction(QIcon("icons/paste.png"), '粘贴', self)
+        clear_action = QAction(QIcon("icons/clear.png"), '清屏', self)
 
         # 绑定槽函数到 QAction 对象
         copy_action.triggered.connect(self.copy)
         paste_action.triggered.connect(self.paste)
+        clear_action.triggered.connect(self.clear)
 
         # 将 QAction 对象添加到菜单中
         menu.addAction(copy_action)
         menu.addAction(paste_action)
+        menu.addAction(clear_action)
 
         # 显示菜单
         menu.exec(event.globalPos())
@@ -199,6 +209,9 @@ class MainDialog(QMainWindow):
         clipboard = QApplication.clipboard()
         clipboard_text = clipboard.text()
         self.send(clipboard_text.encode('utf8'))
+
+    def clear(self):
+        self.send('clear'.encode('utf8') + b'\n')
 
     # 连接服务器
     def connect(self):
@@ -230,7 +243,7 @@ class MainDialog(QMainWindow):
 
                 self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = username, password, \
                     host, key_type, key_file
-                self.init_sftp()
+                self.initSftp()
 
             except Exception as e:
                 self.ui.Shell.setPlaceholderText(str(e))
@@ -238,7 +251,7 @@ class MainDialog(QMainWindow):
             self.alarm('请选择一台设备！')
 
     # 初始化sftp和控制面板
-    def init_sftp(self):
+    def initSftp(self):
         self.isConnected = True
         self.ui.discButton.setEnabled(True)
         self.ui.seeOnline.setEnabled(True)
@@ -261,6 +274,7 @@ class MainDialog(QMainWindow):
                                                      key_file=self.key_file)
 
         threading.Thread(target=self.getsysinfo.get_datas, daemon=True).start()
+        time.sleep(0.02)
         self.flushSysInfo()
         self.refreshDokerInfo()
         self.flushDokerInfo()
@@ -358,19 +372,18 @@ class MainDialog(QMainWindow):
         try:
             if not self.ssh_conn.screen.dirty:
                 if self.ssh_conn.buffer_write:
-                    self.update_terminal()
+                    self.updateTerminal()
                     self.ssh_conn.buffer_write = b''
                 return
 
-            self.update_terminal()
+            self.updateTerminal()
             self.update()
-            # self.sign = self.ssh_conn.buffer3
         except:
             pass
             # traceback.print_exc()
 
     # 更新终端输出
-    def update_terminal(self):
+    def updateTerminal(self):
         self.ui.Shell.moveCursor(QTextCursor.End)
         screen = self.ssh_conn.screen
         # 使用 filter() 函数过滤空行
@@ -430,8 +443,6 @@ class MainDialog(QMainWindow):
                 if s:
                     self.send(s)
         event.accept()
-        if self.sign:
-            self.sign = b''
 
     def keyReleaseEvent(self, event: QKeyEvent):
         text = str(event.text())
@@ -450,11 +461,11 @@ class MainDialog(QMainWindow):
         elif key == Qt.Key_Left:
             self.ssh_conn.buffer_write = b'\x1b[D'
             self.send(b'\x1b[D')
-            self.ssh_conn.screen.cursor.x -= 1
+            # self.ssh_conn.screen.cursor.x = self.ssh_conn.screen.cursor.x - 1
         elif key == Qt.Key_Right:
             self.ssh_conn.buffer_write = b'\x1b[C'
             self.send(b'\x1b[C')
-            self.ssh_conn.screen.cursor.x += 1
+            # self.ssh_conn.screen.cursor.x = self.ssh_conn.screen.cursor.x + 1
 
     def send(self, data):
         self.ssh_conn.write(data)
@@ -534,9 +545,17 @@ class MainDialog(QMainWindow):
         if not self.isConnected:
             # 菜单对象
             self.ui.tree_menu = QMenu(self)
+            self.ui.tree_menu.setStyleSheet("""
+                QMenu::item {
+                    padding-left: 5px;  /* 调整图标和文字之间的间距 */
+                }
+                QMenu::icon {
+                    padding-right: 0px; /* 设置图标右侧的间距 */
+                }
+            """)
             # 创建菜单选项对象
-            self.ui.action = QAction('添加配置', self)
-            self.ui.action2 = QAction('删除配置', self)
+            self.ui.action = QAction(QIcon('icons/addConfig.png'), '添加配置', self)
+            self.ui.action2 = QAction(QIcon('icons/delConf.png'), '删除配置', self)
             # 把动作选项对象添加到菜单self.groupBox_menu上
             self.ui.tree_menu.addAction(self.ui.action)
             self.ui.tree_menu.addAction(self.ui.action2)
@@ -547,30 +566,44 @@ class MainDialog(QMainWindow):
             self.ui.tree_menu.popup(QCursor.pos())
         elif self.isConnected:
             self.ui.tree_menu = QMenu(self)
-            self.ui.action = QAction('下载文件', self)
-            self.ui.action2 = QAction('上传文件', self)
-            self.ui.action3 = QAction('编辑文本', self)
-            self.ui.action4 = QAction('创建文件夹', self)
-            self.ui.action4_1 = QAction('创建文件', self)
-            self.ui.action5 = QAction('删除', self)
-            self.ui.tree_menu.addAction(self.ui.action)
+            # 设置菜单样式表来调整图标和文字之间的间距
+            self.ui.tree_menu.setStyleSheet("""
+                QMenu::item {
+                    padding-left: 5px;  /* 调整图标和文字之间的间距 */
+                }
+                QMenu::icon {
+                    padding-right: 0px; /* 设置图标右侧的间距 */
+                }
+            """)
+
+            self.ui.action1 = QAction(QIcon('icons/Download.png'), '下载文件', self)
+            self.ui.action2 = QAction(QIcon('icons/Upload.png'), '上传文件', self)
+            self.ui.action3 = QAction(QIcon('icons/Edit.png'), '编辑文本', self)
+            self.ui.action4 = QAction(QIcon('icons/createdirector.png'), '创建文件夹', self)
+            self.ui.action5 = QAction(QIcon('icons/createfile.png'), '创建文件', self)
+            self.ui.action6 = QAction(QIcon('icons/refresh.png'), '刷新', self)
+
+            self.ui.action7 = QAction(QIcon('icons/remove.png'), '删除', self)
+            self.ui.tree_menu.addAction(self.ui.action1)
             self.ui.tree_menu.addAction(self.ui.action2)
             self.ui.tree_menu.addAction(self.ui.action3)
             self.ui.tree_menu.addAction(self.ui.action4)
-            self.ui.tree_menu.addAction(self.ui.action4_1)
+            self.ui.tree_menu.addAction(self.ui.action5)
+            self.ui.tree_menu.addAction(self.ui.action6)
 
             # 添加分割线,做标记区分
             bottom_separator = QAction(self)
             bottom_separator.setSeparator(True)
             self.ui.tree_menu.addAction(bottom_separator)
 
-            self.ui.tree_menu.addAction(self.ui.action5)
-            self.ui.action.triggered.connect(self.downloadFile)
+            self.ui.tree_menu.addAction(self.ui.action7)
+            self.ui.action1.triggered.connect(self.downloadFile)
             self.ui.action2.triggered.connect(self.uploadFile)
             self.ui.action3.triggered.connect(self.editFile)
             self.ui.action4.triggered.connect(self.createDir)
-            self.ui.action4_1.triggered.connect(self.createFile)
-            self.ui.action5.triggered.connect(self.remove)
+            self.ui.action5.triggered.connect(self.createFile)
+            self.ui.action6.triggered.connect(self.refresh)
+            self.ui.action7.triggered.connect(self.remove)
             # 声明当鼠标在groupBox控件上右击时，在鼠标位置显示右键菜单   ,exec_,popup两个都可以，
             self.ui.tree_menu.popup(QCursor.pos())
 
@@ -578,9 +611,17 @@ class MainDialog(QMainWindow):
     def treeDocker(self):
         if self.isConnected:
             self.ui.tree_menu = QMenu(self)
-            self.ui.action1 = QAction('停止', self)
-            self.ui.action2 = QAction('重启', self)
-            self.ui.action3 = QAction('删除', self)
+            self.ui.tree_menu.setStyleSheet("""
+                QMenu::item {
+                    padding-left: 5px;  /* 调整图标和文字之间的间距 */
+                }
+                QMenu::icon {
+                    padding-right: 0px; /* 设置图标右侧的间距 */
+                }
+            """)
+            self.ui.action1 = QAction(QIcon('icons/stop.png'), '停止', self)
+            self.ui.action2 = QAction(QIcon('icons/restart.png'), '重启', self)
+            self.ui.action3 = QAction(QIcon('icons/remove.png'), '删除', self)
             # self.ui.action4 = QAction('日志', self)
 
             self.ui.tree_menu.addAction(self.ui.action1)
@@ -651,10 +692,10 @@ class MainDialog(QMainWindow):
             # 设置图标
             if n[0].startswith('d'):
                 # 获取默认的文件夹图标
-                folder_icon = util.getDefaultFolderIcon()
+                folder_icon = util.get_default_folder_icon()
                 self.ui.treeWidget.topLevelItem(i).setIcon(0, folder_icon)
             elif n[0][0] in ['l', '-', 's']:
-                file_icon = util.getDefaultFileIcon(n[8])
+                file_icon = util.get_default_file_icon(n[8])
                 self.ui.treeWidget.topLevelItem(i).setIcon(0, file_icon)
             i += 1
 
@@ -796,7 +837,7 @@ class MainDialog(QMainWindow):
 
     def flushDokerInfo(self):
         self.timer2 = QTimer()
-        self.timer2.start(10000)
+        self.timer2.start(5000)
         self.timer2.timeout.connect(self.refreshDokerInfo)
 
     def refreshDokerInfo(self):
@@ -865,6 +906,10 @@ class MainDialog(QMainWindow):
                     except IOError as e:
                         print(f"Failed to upload file: {e}")
             self.refreshDirs()
+
+    # 刷新
+    def refresh(self):
+        self.refreshDirs()
 
     # 删除
     def remove(self):
@@ -1042,9 +1087,9 @@ class AddConfigUi(QDialog):
         self.dial.lineEdit.setEnabled(False)
         self.setWindowIcon(QIcon("Resources/icon.ico"))
         self.dial.pushButton.clicked.connect(self.addDev)
-        self.dial.pushButton_3.clicked.connect(self.add_key_file)
+        self.dial.pushButton_3.clicked.connect(self.addKeyFile)
 
-        self.dial.comboBox.currentIndexChanged.connect(self.handle_combo_box)
+        self.dial.comboBox.currentIndexChanged.connect(self.handleComboBox)
 
     def addDev(self):
         name, username, password, ip, prot, private_key_file, private_key_type = self.dial.configName.text(), \
@@ -1071,7 +1116,7 @@ class AddConfigUi(QDialog):
                 c.close()
             self.close()
 
-    def add_key_file(self):
+    def addKeyFile(self):
         file_name, _ = QFileDialog.getOpenFileName(
             self,
             "选择文件",
@@ -1081,7 +1126,7 @@ class AddConfigUi(QDialog):
         if file_name:
             self.dial.lineEdit.setText(file_name)
 
-    def handle_combo_box(self):
+    def handleComboBox(self):
         if self.dial.comboBox.currentText():
             self.dial.pushButton_3.setEnabled(True)
             self.dial.lineEdit.setEnabled(True)
@@ -1195,7 +1240,7 @@ class CustomWidget(QWidget):
             # 安装按钮
             self.install_button = QPushButton("安装", self)
             self.install_button.setCursor(QCursor(Qt.PointingHandCursor))
-            self.install_button.clicked.connect(lambda: self.install_action(item, ssh_conn))
+            self.install_button.clicked.connect(lambda: self.installAction(item, ssh_conn))
             self.button_layout.addWidget(self.install_button)
         else:
             # 安装按钮
@@ -1224,7 +1269,7 @@ class CustomWidget(QWidget):
             }
         """)
 
-    def install_action(self, item, ssh_conn):
+    def installAction(self, item, ssh_conn):
         """
         点击安装按钮，安装docker容器
         :param item: 数据对象
@@ -1279,19 +1324,19 @@ class InstallDocker(QDialog):
         # 取消
         self.dial.buttonBoxDockerInstall.rejected.connect(self.reject)
         # 安装
-        self.dial.buttonBoxDockerInstall.accepted.connect(lambda: self.install_docker(item, ssh_conn))
+        self.dial.buttonBoxDockerInstall.accepted.connect(lambda: self.installDocker(item, ssh_conn))
 
         # 创建一个 Communicate 实例
         self.communicate = Communicate()
         # 在对话框关闭时发射信号
-        self.finished.connect(self.on_finished)
+        self.finished.connect(self.onFinished)
 
     @Slot(int)
-    def on_finished(self, result):
+    def onFinished(self, result):
         # 当对话框关闭时发射信号
         self.communicate.refresh_parent.emit()
 
-    def install_docker(self, item, ssh_conn):
+    def installDocker(self, item, ssh_conn):
         try:
             container_name = self.dial.lineEdit_containerName.text()
             image = self.dial.lineEdit_Image.text()

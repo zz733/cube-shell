@@ -79,12 +79,7 @@ class SshClient(BaseBackend):
         从 SSH 通道读取数据，并写入到屏幕。
         """
         output = self.channel.recv(1024)
-        if self.buffer_write == b'\x1b[D':
-            self.write_to_screen(output + b'\x1b[D')
-        elif self.buffer_write == b'\x1b[C':
-            self.write_to_screen(output + b'\x1b[C')
-        else:
-            self.write_to_screen(output)
+        self.write_to_screen(output)
 
     def close(self):
         """

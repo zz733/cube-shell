@@ -18,12 +18,15 @@ BANNER = """
   / __|| | | || '_ \  / _ \|______|/ __|| '_ \  / _ \| || |
  | (__ | |_| || |_) ||  __/        \__ \| | | ||  __/| || |
   \___| \__,_||_.__/  \___|        |___/|_| |_| \___||_||_|\n 
-欢迎使用 cube-shell SSH 服务器远程管理工具 如有疑问请以在项目主页联系作者\n                                            
+欢迎使用 cube-shell SSH 服务器远程管理工具 如有疑问请在项目主页联系作者\n                                            
 """
 
 
-# 获取系统默认文件夹图标
-def getDefaultFolderIcon():
+def get_default_folder_icon():
+    """
+    # 获取系统默认文件夹图标
+    :return:
+    """
     # 创建一个 QFileIconProvider 对象
     icon_provider = QFileIconProvider()
 
@@ -34,7 +37,7 @@ def getDefaultFolderIcon():
 
 
 # 获取系统默认文件图标
-def getDefaultFileIcon(qt_str):
+def get_default_file_icon(qt_str):
     # 创建一个 QFileIconProvider 对象
     icon_provider = QFileIconProvider()
 
@@ -234,7 +237,3 @@ def check_server_accessibility(hostname, port):
     except (socket.timeout, socket.error) as e:
         print(f"Connection failed: {e}")
         return False
-
-
-if __name__ == '__main__':
-    check_server_accessibility('124.223.177.55', '22')
