@@ -8,18 +8,19 @@ import time
 
 import PySide6
 import qdarkstyle
-from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, Slot
+from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, Slot, QUrl
 from PySide6.QtGui import QIcon, QAction, QTextCursor, QCursor, QCloseEvent, QKeyEvent, QInputMethodEvent, QPixmap, \
-    QDragEnterEvent, QDropEvent, QFont, QContextMenuEvent
+    QDragEnterEvent, QDropEvent, QFont, QContextMenuEvent, QKeySequence, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QDialog, QMessageBox, QTreeWidgetItem, \
-    QInputDialog, QFileDialog, QTreeWidget, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QToolBar
+    QInputDialog, QFileDialog, QTreeWidget, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QToolBar, QMenuBar
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
 from qdarkstyle import DarkPalette, LightPalette
 
+from core.frequently_used_commands import TreeSearchApp
 from core.mux import mux
-from function import get_running_data, util
+from function import get_running_data, util, about, theme
 from function.ssh_func import SshClient
 from function.util import format_file_size, has_valid_suffix
 from style.style import updateColor
@@ -69,6 +70,10 @@ class MainDialog(QMainWindow):
 
         self.setDarkTheme()  # 默认设置为暗主题
 
+        file_path = 'conf/theme.json'
+        # 读取 JSON 文件内容
+        util.THEME = util.read_json(file_path)
+
         # 设置拖放行为
         self.setAcceptDrops(True)
 
@@ -77,6 +82,12 @@ class MainDialog(QMainWindow):
 
         # 重写 contextMenuEvent 方法
         self.ui.Shell.contextMenuEvent = self.showCustomContextMenu
+
+        # 菜单栏
+        self.ui.menuBar = MenuBarController()
+        self.ui.menuBar.show()
+        # 添加配置文件
+        self.ui.menuBar.new_action.triggered.connect(self.showAddConfig)
 
         self.ssh_conn = None
         self.timer1, self.timer2 = None, None
@@ -384,6 +395,13 @@ class MainDialog(QMainWindow):
 
     # 更新终端输出
     def updateTerminal(self):
+        font_ = util.THEME['font']
+        theme_ = util.THEME['theme']
+        color_ = util.THEME['theme_color']
+
+        font = QFont(font_, 14)
+        self.ui.Shell.setFont(font)
+
         self.ui.Shell.moveCursor(QTextCursor.End)
         screen = self.ssh_conn.screen
         # 使用 filter() 函数过滤空行
@@ -400,8 +418,8 @@ class MainDialog(QMainWindow):
 
         self.ui.Shell.clear()
         # 使用Pygments进行语法高亮
-        formatter = HtmlFormatter(style='rrt', noclasses=True, bg_color='#ffffff')
-        self.ui.Shell.setStyleSheet("background-color: rgb(0, 0, 0);")
+        formatter = HtmlFormatter(style=theme_, noclasses=True, bg_color='#ffffff')
+        self.ui.Shell.setStyleSheet("background-color: " + color_ + ";")
         filtered_data = terminal_str.rstrip().replace("\0", " ")
 
         pattern = r'\s+(?=\n)'
@@ -1209,6 +1227,80 @@ class Confirm(QDialog):
         self.cfm = confirm.Ui_confirm()
         self.cfm.setupUi(self)
         self.setWindowIcon(QIcon("Resources/icon.ico"))
+
+
+# 菜单栏
+class MenuBarController(QMenuBar):
+    def __init__(self):
+        super().__init__()
+        # 创建“文件”菜单
+        self.about_dialog = None
+        file_menu = self.addMenu("文件")
+        # 创建“设置”菜单
+        setting_menu = self.addMenu("设置")
+        # 创建“帮助”菜单
+        help_menu = self.addMenu("帮助")
+
+        # 创建“新建”动作
+        self.new_action = QAction(QIcon("icons/new.png"), "&新增配置", self)
+        self.new_action.setShortcut("Shift+Ctrl+A")
+        self.new_action.setStatusTip("添加配置")
+        file_menu.addAction(self.new_action)
+
+        # 创建“主题设置”动作
+        theme_action = QAction(QIcon("icons/undo.png"), "&主题设置", self)
+        theme_action.setShortcut("Shift+Ctrl+T")
+        theme_action.setStatusTip("设置主题")
+        setting_menu.addAction(theme_action)
+        theme_action.triggered.connect(self.theme)
+        #
+        # # 创建“重做”动作
+        # redo_action = QAction(QIcon("icons/redo.png"), "&Redo", self)
+        # redo_action.setShortcut("Ctrl+Y")
+        # redo_action.setStatusTip("Redo last undone action")
+        # setting_menu.addAction(redo_action)
+
+        # 创建“关于”动作
+        about_action = QAction(QIcon("icons/about.png"), "&关于", self)
+        about_action.setShortcut("Shift+Ctrl+B")
+        about_action.setStatusTip("cubeShell 有关信息")
+        help_menu.addAction(about_action)
+        about_action.triggered.connect(self.about)
+
+        linux_action = QAction(QIcon("icons/about.png"), "&Linux常用命令", self)
+        linux_action.setShortcut("Shift+Ctrl+P")
+        linux_action.setStatusTip("最常用的Linux命令查找")
+        help_menu.addAction(linux_action)
+        linux_action.triggered.connect(self.linux)
+
+        help_action = QAction(QIcon("icons/about.png"), "&帮助", self)
+        help_action.setShortcut("Shift+Ctrl+P")
+        help_action.setStatusTip("cubeShell使用说明")
+        help_menu.addAction(help_action)
+        help_action.triggered.connect(self.help)
+
+    # 关于
+    def about(self):
+        self.about_dialog = about.AboutDialog()
+        self.about_dialog.show()
+
+    def theme(self):
+        self.theme_dialog = theme.MainWindow()
+        self.theme_dialog.show()
+
+    # linux 常用命令
+    def linux(self):
+        self.tree_search_app = TreeSearchApp()
+        self.tree_search_app.show()
+
+    # 帮助
+    def help(self):
+        url = QUrl(
+            "https://mp.weixin.qq.com/s?__biz=MzA5ODQ5ODgxOQ==&mid=2247485218&idx=1&sn"
+            "=f7774a9a56c1f1ae6c73d6bf6460c155&chksm"
+            "=9091e74ea7e66e5816daad88313c8c559eb1d60f8da8b1d38268008ed7cff9e89225b8fe32fd&token=1771342232&lang"
+            "=zh_CN#rd")
+        QDesktopServices.openUrl(url)
 
 
 class Communicate(QObject):

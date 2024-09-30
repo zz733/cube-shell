@@ -1,25 +1,11 @@
 # -*- coding: utf-8 -*-
 from PySide6 import QtCore, QtWidgets, QtGui
-################################################################################
-## Form generated from reading UI file 'main1.ui'
-##
-## Created by: Qt User Interface Compiler version 6.7.2
-##
-## WARNING! All changes made in this file will be lost when recompiling UI file!
-################################################################################
-
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-                            QMetaObject, QObject, QPoint, QRect,
-                            QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-                           QFont, QFontDatabase, QGradient, QIcon,
-                           QImage, QKeySequence, QLinearGradient, QPainter,
-                           QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QHeaderView,
-                               QLabel, QLineEdit, QMainWindow, QPlainTextEdit,
+from PySide6.QtCore import (QCoreApplication, QMetaObject, QSize, Qt)
+from PySide6.QtGui import (QCursor,
+                           QFont)
+from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
                                QProgressBar, QPushButton, QSizePolicy, QSplitter,
-                               QTabWidget, QTextBrowser, QTreeWidget, QTreeWidgetItem,
-                               QVBoxLayout, QWidget, QDialog, QStyleOptionTab)
+                               QTabWidget, QTextBrowser, QTreeWidget, QVBoxLayout, QWidget)
 
 from style.style import PrimaryButtonStyle, InfoButtonStyle, DangerButtonStyle
 
@@ -66,10 +52,11 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.treeWidget, 1, 0, 1, 1)
 
-        self.lineEdit = QLineEdit(self.gridLayoutWidget)
-        self.lineEdit.setObjectName(u"lineEdit")
-
-        self.gridLayout.addWidget(self.lineEdit, 0, 0, 1, 1)
+        # 删除默认的展示框
+        # self.lineEdit = QLineEdit(self.gridLayoutWidget)
+        # self.lineEdit.setObjectName(u"lineEdit")
+        #
+        # self.gridLayout.addWidget(self.lineEdit, 0, 0, 1, 1)
 
         # 创建初始的 QLineEdit
         self.line_edits = []  # 保存所有 QLineEdit 的列表
@@ -77,7 +64,7 @@ class Ui_MainWindow(object):
         self.splitter_3.addWidget(self.gridLayoutWidget)
         self.splitter_255 = QSplitter(self.splitter_3)
         self.splitter_255.setObjectName(u"splitter_255")
-        #self.splitter_255.setMinimumSize(QSize(0, 0))
+        # self.splitter_255.setMinimumSize(QSize(0, 0))
         self.splitter_255.setMaximumSize(QSize(16777215, 16777215))
         self.splitter_255.setCursor(QCursor(Qt.CursorShape.SizeHorCursor))
         self.splitter_255.setMouseTracking(False)
@@ -322,7 +309,7 @@ class Ui_MainWindow(object):
         font.setPointSize(14)
         self.Shell.setFont(font)
         self.Shell.setObjectName(u"Shell")
-        #self.Shell.setMinimumSize(QSize(234, 338))
+        # self.Shell.setMinimumSize(QSize(234, 338))
         self.Shell.setSizeIncrement(QSize(0, 0))
         self.Shell.setMouseTracking(True)
         self.Shell.setReadOnly(True)

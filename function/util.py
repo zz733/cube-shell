@@ -21,6 +21,9 @@ BANNER = """
 欢迎使用 cube-shell SSH 服务器远程管理工具 如有疑问请在项目主页联系作者\n                                            
 """
 
+# 主题
+THEME = None
+
 
 def get_default_folder_icon():
     """
@@ -237,3 +240,23 @@ def check_server_accessibility(hostname, port):
     except (socket.timeout, socket.error) as e:
         print(f"Connection failed: {e}")
         return False
+
+
+def read_json(file_path):
+    """
+    读取json文件
+    :param file_path:
+    :return:
+    """
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    return data
+
+
+def write_json(file_path, data):
+    """
+    写入json文件
+    indent=4 让文件具有可读性
+    """
+    with open(file_path, 'w') as file:
+        json.dump(data, file, indent=4)
