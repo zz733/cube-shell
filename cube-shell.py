@@ -84,10 +84,11 @@ class MainDialog(QMainWindow):
         self.ui.Shell.contextMenuEvent = self.showCustomContextMenu
 
         # 菜单栏
-        self.ui.menuBar = MenuBarController()
-        self.ui.menuBar.show()
-        # 添加配置文件
-        self.ui.menuBar.new_action.triggered.connect(self.showAddConfig)
+        # self.ui.menuBar = MenuBarController()
+        # self.ui.menuBar.show()
+        # # 添加配置文件
+        # self.ui.menuBar.new_action.triggered.connect(self.showAddConfig)
+        self.menuBarController()
 
         self.ssh_conn = None
         self.timer1, self.timer2 = None, None
@@ -127,6 +128,78 @@ class MainDialog(QMainWindow):
 
         self.isConnected = False
         self.startTimer(50)
+
+    def menuBarController(self):
+        # 创建菜单栏
+        menubar = self.menuBar()
+
+        file_menu = menubar.addMenu("文件")
+        # 创建“设置”菜单
+        setting_menu = menubar.addMenu("设置")
+        # 创建“帮助”菜单
+        help_menu = menubar.addMenu("帮助")
+
+        # 创建“新建”动作
+        new_action = QAction(QIcon("icons/new.png"), "&新增配置", self)
+        new_action.setShortcut("Shift+Ctrl+A")
+        new_action.setStatusTip("添加配置")
+        file_menu.addAction(new_action)
+        new_action.triggered.connect(self.showAddConfig)
+
+        # 创建“主题设置”动作
+        theme_action = QAction(QIcon("icons/undo.png"), "&主题设置", self)
+        theme_action.setShortcut("Shift+Ctrl+T")
+        theme_action.setStatusTip("设置主题")
+        setting_menu.addAction(theme_action)
+        theme_action.triggered.connect(self.theme)
+        #
+        # # 创建“重做”动作
+        # redo_action = QAction(QIcon("icons/redo.png"), "&Redo", self)
+        # redo_action.setShortcut("Ctrl+Y")
+        # redo_action.setStatusTip("Redo last undone action")
+        # setting_menu.addAction(redo_action)
+
+        # 创建“关于”动作
+        about_action = QAction(QIcon("icons/about.png"), "&关于", self)
+        about_action.setShortcut("Shift+Ctrl+B")
+        about_action.setStatusTip("cubeShell 有关信息")
+        help_menu.addAction(about_action)
+        about_action.triggered.connect(self.about)
+
+        linux_action = QAction(QIcon("icons/about.png"), "&Linux常用命令", self)
+        linux_action.setShortcut("Shift+Ctrl+P")
+        linux_action.setStatusTip("最常用的Linux命令查找")
+        help_menu.addAction(linux_action)
+        linux_action.triggered.connect(self.linux)
+
+        help_action = QAction(QIcon("icons/about.png"), "&帮助", self)
+        help_action.setShortcut("Shift+Ctrl+P")
+        help_action.setStatusTip("cubeShell使用说明")
+        help_menu.addAction(help_action)
+        help_action.triggered.connect(self.help)
+
+    # 关于
+    def about(self):
+        self.about_dialog = about.AboutDialog()
+        self.about_dialog.show()
+
+    def theme(self):
+        self.theme_dialog = theme.MainWindow()
+        self.theme_dialog.show()
+
+    # linux 常用命令
+    def linux(self):
+        self.tree_search_app = TreeSearchApp()
+        self.tree_search_app.show()
+
+    # 帮助
+    def help(self):
+        url = QUrl(
+            "https://mp.weixin.qq.com/s?__biz=MzA5ODQ5ODgxOQ==&mid=2247485218&idx=1&sn"
+            "=f7774a9a56c1f1ae6c73d6bf6460c155&chksm"
+            "=9091e74ea7e66e5816daad88313c8c559eb1d60f8da8b1d38268008ed7cff9e89225b8fe32fd&token=1771342232&lang"
+            "=zh_CN#rd")
+        QDesktopServices.openUrl(url)
 
     def eventFilter(self, source, event):
         """
@@ -1227,80 +1300,6 @@ class Confirm(QDialog):
         self.cfm = confirm.Ui_confirm()
         self.cfm.setupUi(self)
         self.setWindowIcon(QIcon("Resources/icon.ico"))
-
-
-# 菜单栏
-class MenuBarController(QMenuBar):
-    def __init__(self):
-        super().__init__()
-        # 创建“文件”菜单
-        self.about_dialog = None
-        file_menu = self.addMenu("文件")
-        # 创建“设置”菜单
-        setting_menu = self.addMenu("设置")
-        # 创建“帮助”菜单
-        help_menu = self.addMenu("帮助")
-
-        # 创建“新建”动作
-        self.new_action = QAction(QIcon("icons/new.png"), "&新增配置", self)
-        self.new_action.setShortcut("Shift+Ctrl+A")
-        self.new_action.setStatusTip("添加配置")
-        file_menu.addAction(self.new_action)
-
-        # 创建“主题设置”动作
-        theme_action = QAction(QIcon("icons/undo.png"), "&主题设置", self)
-        theme_action.setShortcut("Shift+Ctrl+T")
-        theme_action.setStatusTip("设置主题")
-        setting_menu.addAction(theme_action)
-        theme_action.triggered.connect(self.theme)
-        #
-        # # 创建“重做”动作
-        # redo_action = QAction(QIcon("icons/redo.png"), "&Redo", self)
-        # redo_action.setShortcut("Ctrl+Y")
-        # redo_action.setStatusTip("Redo last undone action")
-        # setting_menu.addAction(redo_action)
-
-        # 创建“关于”动作
-        about_action = QAction(QIcon("icons/about.png"), "&关于", self)
-        about_action.setShortcut("Shift+Ctrl+B")
-        about_action.setStatusTip("cubeShell 有关信息")
-        help_menu.addAction(about_action)
-        about_action.triggered.connect(self.about)
-
-        linux_action = QAction(QIcon("icons/about.png"), "&Linux常用命令", self)
-        linux_action.setShortcut("Shift+Ctrl+P")
-        linux_action.setStatusTip("最常用的Linux命令查找")
-        help_menu.addAction(linux_action)
-        linux_action.triggered.connect(self.linux)
-
-        help_action = QAction(QIcon("icons/about.png"), "&帮助", self)
-        help_action.setShortcut("Shift+Ctrl+P")
-        help_action.setStatusTip("cubeShell使用说明")
-        help_menu.addAction(help_action)
-        help_action.triggered.connect(self.help)
-
-    # 关于
-    def about(self):
-        self.about_dialog = about.AboutDialog()
-        self.about_dialog.show()
-
-    def theme(self):
-        self.theme_dialog = theme.MainWindow()
-        self.theme_dialog.show()
-
-    # linux 常用命令
-    def linux(self):
-        self.tree_search_app = TreeSearchApp()
-        self.tree_search_app.show()
-
-    # 帮助
-    def help(self):
-        url = QUrl(
-            "https://mp.weixin.qq.com/s?__biz=MzA5ODQ5ODgxOQ==&mid=2247485218&idx=1&sn"
-            "=f7774a9a56c1f1ae6c73d6bf6460c155&chksm"
-            "=9091e74ea7e66e5816daad88313c8c559eb1d60f8da8b1d38268008ed7cff9e89225b8fe32fd&token=1771342232&lang"
-            "=zh_CN#rd")
-        QDesktopServices.openUrl(url)
 
 
 class Communicate(QObject):

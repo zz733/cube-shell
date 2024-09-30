@@ -47,7 +47,7 @@ class TreeSearchApp(QMainWindow):
         self.search_box.textChanged.connect(self.filter_tree)
 
     def load_data_from_json(self, file_path):
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding='utf-8') as file:
             data = json.load(file)
             self.add_items(self.model.invisibleRootItem(), data['treeData'])
 

@@ -248,7 +248,7 @@ def read_json(file_path):
     :param file_path:
     :return:
     """
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return data
 
@@ -258,5 +258,5 @@ def write_json(file_path, data):
     写入json文件
     indent=4 让文件具有可读性
     """
-    with open(file_path, 'w') as file:
+    with open(file_path, 'w', encoding='utf-8') as file:
         json.dump(data, file, indent=4)
