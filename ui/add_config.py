@@ -9,15 +9,15 @@
 ################################################################################
 
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-    QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt)
+                            QMetaObject, QObject, QPoint, QRect,
+                            QSize, QTime, QUrl, Qt)
 from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
+                           QFont, QFontDatabase, QGradient, QIcon,
+                           QImage, QKeySequence, QLinearGradient, QPainter,
+                           QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QGridLayout,
-    QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QSizePolicy, QWidget)
+                               QHBoxLayout, QLabel, QLineEdit, QPushButton,
+                               QSizePolicy, QWidget)
 
 from style.style import PrimaryButtonStyle
 
@@ -136,13 +136,15 @@ class Ui_addConfig(object):
 
         self.gridLayout.addWidget(self.protEdit, 4, 1, 1, 2)
 
-
         self.horizontalLayout.addLayout(self.gridLayout)
 
-
         self.retranslateUi(addConfig)
-
         QMetaObject.connectSlotsByName(addConfig)
+
+        addConfig.setTabOrder(self.configName, self.usernamEdit)
+        addConfig.setTabOrder(self.usernamEdit, self.passwordEdit)
+        addConfig.setTabOrder(self.passwordEdit, self.ipEdit)
+        addConfig.setTabOrder(self.ipEdit, self.protEdit)
     # setupUi
 
     def retranslateUi(self, addConfig):
@@ -150,14 +152,18 @@ class Ui_addConfig(object):
         self.label_5.setText(QCoreApplication.translate("addConfig", u"\u79c1\u94a5\u767b\u5f55", None))
         self.pushButton_3.setText(QCoreApplication.translate("addConfig", u"+", None))
         self.configName.setText("")
-        self.configName.setPlaceholderText(QCoreApplication.translate("addConfig", u"\u8bf7\u8f93\u5165\u914d\u7f6e\u540d\u79f0", None))
+        self.configName.setPlaceholderText(
+            QCoreApplication.translate("addConfig", u"\u8bf7\u8f93\u5165\u914d\u7f6e\u540d\u79f0", None))
         self.passwordEdit.setText("")
-        self.passwordEdit.setPlaceholderText(QCoreApplication.translate("addConfig", u"\u7ec8\u7aef\u5bc6\u7801\u53ef\u4ee5\u4e0d\u8f93\u5165", None))
+        self.passwordEdit.setPlaceholderText(
+            QCoreApplication.translate("addConfig", u"\u7ec8\u7aef\u5bc6\u7801\u53ef\u4ee5\u4e0d\u8f93\u5165", None))
         self.ipEdit.setText("")
-        self.ipEdit.setPlaceholderText(QCoreApplication.translate("addConfig", u"\u8bf7\u8f93\u5165\u7ec8\u7aef\u5730\u5740:\u7aef\u53e3", None))
+        self.ipEdit.setPlaceholderText(
+            QCoreApplication.translate("addConfig", u"\u8bf7\u8f93\u5165\u7ec8\u7aef\u5730\u5740:\u7aef\u53e3", None))
         self.label.setText(QCoreApplication.translate("addConfig", u"\u7528\u6237\u540d\uff1a", None))
         self.usernamEdit.setText("")
-        self.usernamEdit.setPlaceholderText(QCoreApplication.translate("addConfig", u"\u8bf7\u8f93\u5165\u7ec8\u7aef\u7528\u6237\u540d", None))
+        self.usernamEdit.setPlaceholderText(
+            QCoreApplication.translate("addConfig", u"\u8bf7\u8f93\u5165\u7ec8\u7aef\u7528\u6237\u540d", None))
         self.comboBox.setItemText(0, "")
         self.comboBox.setItemText(1, QCoreApplication.translate("addConfig", u"Ed25519Key", None))
         self.comboBox.setItemText(2, QCoreApplication.translate("addConfig", u"RSAKey", None))
@@ -173,4 +179,3 @@ class Ui_addConfig(object):
         self.label_7.setText(QCoreApplication.translate("addConfig", u"\u7aef\u53e3", None))
         self.protEdit.setText(QCoreApplication.translate("addConfig", u"22", None))
     # retranslateUi
-
