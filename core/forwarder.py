@@ -1,3 +1,6 @@
+import logging
+from contextlib import suppress
+
 import paramiko
 import socket
 import threading
@@ -26,29 +29,53 @@ class ForwarderManager:
 
     def close_ssh_client(self, ssh_client):
         if ssh_client in self.ssh_clients:
-            ssh_client.close()
+            with suppress(Exception):
+                ssh_client.close()
             del self.ssh_clients[ssh_client]
 
     def start_tunnel(self, tunnel_id, tunnel_type, local_port, remote_host=None, remote_port=None, ssh_host=None,
-                     ssh_port=None, ssh_user=None, ssh_password=None):
+                     ssh_port=None, ssh_user=None, ssh_password=None, key_type=None, key_file=None):
+
+        # 加载私钥
+        private_key = None
+        if key_type == 'Ed25519Key':
+            private_key = paramiko.Ed25519Key.from_private_key_file(key_file)
+        elif key_type == 'RSAKey':
+            private_key = paramiko.RSAKey.from_private_key_file(key_file)
+        elif key_type == 'ECDSAKey':
+            private_key = paramiko.ECDSAKey.from_private_key_file(key_file)
+        elif key_type == 'DSSKey':
+            private_key = paramiko.DSSKey.from_private_key_file(key_file)
+
         ssh_client = paramiko.SSHClient()
         ssh_client.load_system_host_keys()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(ssh_host, port=ssh_port, username=ssh_user, password=ssh_password)
-        transport = ssh_client.get_transport()
 
-        if tunnel_type == 'local':
-            tunnel = LocalPortForwarder(ssh_client, tunnel_id, transport, remote_host, remote_port, local_port)
-        elif tunnel_type == 'remote':
-            tunnel = RemotePortForwarder(ssh_client, tunnel_id, transport, local_port, remote_host, remote_port)
-        elif tunnel_type == 'dynamic':
-            tunnel = DynamicPortForwarder(ssh_client, tunnel_id, transport, local_port)
-        else:
-            raise ValueError("Invalid tunnel type.")
+        try:
+            if private_key:
+                ssh_client.connect(hostname=ssh_host, port=ssh_port, username=ssh_user, pkey=private_key)
+            else:
+                ssh_client.connect(hostname=ssh_host, port=ssh_port, username=ssh_user, password=ssh_password)
 
-        tunnel.start()
+            transport = ssh_client.get_transport()
 
-        return tunnel, ssh_client, transport
+            if tunnel_type == 'local':
+                tunnel = LocalPortForwarder(ssh_client, tunnel_id, transport, remote_host, remote_port, local_port)
+            elif tunnel_type == 'remote':
+                tunnel = RemotePortForwarder(ssh_client, tunnel_id, transport, local_port, remote_host, remote_port)
+            elif tunnel_type == 'dynamic':
+                tunnel = DynamicPortForwarder(ssh_client, tunnel_id, transport, local_port)
+            else:
+                raise ValueError("Invalid tunnel type.")
+
+            tunnel.start()
+
+            return tunnel, ssh_client, transport
+        except Exception as e:
+            logging.error(f"Error starting tunnel: {e}")
+            with suppress(Exception):
+                ssh_client.close()
+            raise
 
 
 class LocalPortForwarder(threading.Thread):
@@ -68,16 +95,18 @@ class LocalPortForwarder(threading.Thread):
         self.running = False
         self.listen_socket = None
         self.client_socket = None
+        self.lock = threading.Lock()  # 添加锁
 
     def stop(self):
-        self.running = False
+        with self.lock:  # 使用锁保护对 running 的修改
+            self.running = False
         if self.listen_socket:
             try:
                 self.listen_socket.close()
                 self.listen_socket = None
-                print(f"Socket on port {self.local_port} has been closed")
+                logging.info(f"Socket on port {self.local_port} has been closed")
             except Exception as e:
-                print(f"Exception in ForwardServer.stop: {e}")
+                logging.error(f"Exception in ForwardServer.stop: {e}")
 
     def run(self):
         self.running = True
@@ -85,14 +114,18 @@ class LocalPortForwarder(threading.Thread):
             # 创建本地监听的套接字
             self.listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.listen_socket.bind(('127.0.0.1', self.local_port))
+            try:
+                self.listen_socket.bind(('127.0.0.1', self.local_port))  # 增加异常处理
+            except Exception as e:
+                logging.error(f"Error binding socket: {e}")
+                return
             self.listen_socket.listen(100)
-            print(f"Listening for connections on 127.0.0.1:{self.local_port}...")
+            logging.info(f"Listening for connections on 127.0.0.1:{self.local_port}...")
 
             while self.running:
                 try:
                     client_socket, addr = self.listen_socket.accept()
-                    print(f"Received connection from {addr[0]}:{addr[1]}")
+                    logging.info(f"Received connection from {addr[0]}:{addr[1]}")
 
                     self.client_socket = client_socket
 
@@ -107,14 +140,14 @@ class LocalPortForwarder(threading.Thread):
                         # 创建转发线程
                         threading.Thread(target=self.forward_data, args=(client_socket, channel)).start()
                     else:
-                        print("Failed to open channel.")
+                        logging.warning("Failed to open channel.")
                         client_socket.close()
                 except socket.timeout:
                     # 可以在这里增加一个超时检查，防止无限等待
                     pass
                 except Exception as e:
                     self.running = False
-                    print(f"Error accepting connection: {e}")
+                    logging.error(f"Error accepting connection: {e}")
         finally:
             self.stop()
 
@@ -148,7 +181,8 @@ class LocalPortForwarder(threading.Thread):
                         print(f"Error receiving data from channel: {e}")
                         break
         finally:
-            self.running = False
+            with self.lock:
+                self.running = False
             channel.close()
             client_socket.close()
             print("Connection closed.")
@@ -170,9 +204,11 @@ class RemotePortForwarder(threading.Thread):
         self.ssh_client = ssh_client
         self.running = False
         self._shutdown_event = threading.Event()
+        self._lock = threading.Lock()  # 添加锁
 
     def stop(self):
-        self.running = False
+        with self._lock:
+            self.running = False
         self._shutdown_event.set()
 
     def run(self):
@@ -193,12 +229,12 @@ class RemotePortForwarder(threading.Thread):
         sock = socket.socket()
         try:
             sock.connect((self.remote_host, self.remote_port))
-        except Exception as e:
-            print(f"Forwarding failed: {e}")
-            chan.close()
+        except (socket.error, Exception) as e:
+            logging.error(f"Forwarding failed: {e}")
+            self._close_resources(chan, sock)
             return
 
-        print(f"Connected! Tunnel open {chan.origin_addr} -> ({self.remote_host}, {self.remote_port})")
+        logging.info(f"Connected! Tunnel open {chan.origin_addr} -> ({self.remote_host}, {self.remote_port})")
 
         while self.running and not self._shutdown_event.is_set():
             r, w, x = select.select([sock, chan], [], [])
@@ -213,9 +249,12 @@ class RemotePortForwarder(threading.Thread):
                     break
                 sock.send(data)
 
+        self._close_resources(chan, sock)
+        logging.info(f"Tunnel closed from {chan.origin_addr}")
+
+    def _close_resources(self, chan, sock):
         chan.close()
         sock.close()
-        print(f"Tunnel closed from {chan.origin_addr}")
 
 
 class DynamicPortForwarder(threading.Thread):
@@ -233,14 +272,16 @@ class DynamicPortForwarder(threading.Thread):
         self.running = False
         self._shutdown_event = threading.Event()
         self.channels = []
+        self.channels_lock = threading.Lock()  # 添加锁
 
     def stop(self):
         self.running = False
         self._shutdown_event.set()
         # 关闭所有已打开的通道
-        for channel in self.channels:
-            channel.close()
-        self.channels.clear()
+        with self.channels_lock:
+            for channel in self.channels:
+                channel.close()
+            self.channels.clear()
 
     def run(self):
         self.running = True
@@ -259,21 +300,21 @@ class DynamicPortForwarder(threading.Thread):
     def handle(self, chan):
         try:
             # 接受目标地址类型
-            address_type = chan.recv(1)[0]
+            address_type = ord(chan.recv(1))
             if address_type == 1:  # IPv4
                 target_addr = socket.inet_ntoa(chan.recv(4))
             elif address_type == 3:  # Domain name
-                domain_length = int.from_bytes(chan.recv(1), byteorder='big')
+                domain_length = ord(chan.recv(1))
                 target_addr = chan.recv(domain_length).decode('utf-8')
             else:
-                print("Unsupported address type.")
+                logging.warning("Unsupported address type.")
                 chan.close()
                 return
 
             # 接受目标端口
             target_port = int.from_bytes(chan.recv(2), byteorder='big')
 
-            print(f"SOCKS request to {target_addr}:{target_port}")
+            logging.info(f"SOCKS request to {target_addr}:{target_port}")
 
             # 通过 SSH 隧道创建新的通道
             channel = self.ssh_transport.open_channel(
@@ -283,7 +324,8 @@ class DynamicPortForwarder(threading.Thread):
             )
 
             if channel:
-                self.channels.append(channel)
+                with self.channels_lock:
+                    self.channels.append(channel)
                 # 创建转发线程
                 threading.Thread(target=self.forward_data, args=(chan, channel)).start()
             else:
@@ -311,4 +353,10 @@ class DynamicPortForwarder(threading.Thread):
         finally:
             channel.close()
             client_socket.close()
+            with self.channels_lock:
+                self.channels.remove(channel)
             print("Connection closed.")
+
+
+# 配置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

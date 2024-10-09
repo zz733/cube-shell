@@ -14,9 +14,9 @@ class KEYS:
 
 
 class ICONS:
-    TUNNEL = ":icons/tunnel.png"
-    START = "icons/start_tunnel.png"
-    STOP = "icons/stop_tunnel.png"
+    TUNNEL = "icons/tunnel-diode.png"
+    START = "icons/open.png"
+    STOP = "icons/off.png"
     KILL_SSH = ":icons/kill.png"
 
 

@@ -167,7 +167,7 @@ class MainDialog(QMainWindow):
         help_menu = menubar.addMenu("帮助")
 
         # 创建“新建”动作
-        new_action = QAction(QIcon("icons/new.png"), "&新增配置", self)
+        new_action = QAction(QIcon("icons/icons8-ssh-48.png"), "&新增配置", self)
         new_action.setShortcut("Shift+Ctrl+A")
         new_action.setStatusTip("添加配置")
         file_menu.addAction(new_action)
@@ -1639,9 +1639,10 @@ class AddTunnelConfig(QDialog):
             QMessageBox.critical(self, "警告", "请填写远程绑定地址")
             return
         split = remote.split(':')
-        if len(split) != 2:
+        if len(split) != 2 and tunnel_type != '动态':
             QMessageBox.critical(self, "警告", "远程绑定地址格式不正确，请检查")
             return
+
         local = self.tunnel.local_bind_address_edit.text()
         if local == '':
             QMessageBox.critical(self, "警告", "请填写本地绑定地址")
@@ -1673,23 +1674,6 @@ class AddTunnelConfig(QDialog):
 
         util.clear_grid_layout(self.parent().ui.gridLayout_ssh)
         self.parent().tunnel_refresh()
-
-    def alarm(self, alart):
-        self.addTunnel.alarmbox = QMessageBox()
-        self.addTunnel.alarmbox.setWindowIcon(QIcon("Resources/icon.ico"))
-        self.addTunnel.alarmbox.setText(alart)
-        self.addTunnel.alarmbox.setWindowTitle('错误提示')
-        self.addTunnel.alarmbox.show()
-
-
-def as_dict(self):
-    return {
-        KEYS.TUNNEL_TYPE: self.ui.comboBox_tunnel_type.currentText(),
-        KEYS.BROWSER_OPEN: self.ui.browser_open.text(),
-        KEYS.DEVICE_NAME: self.ui.comboBox_ssh.currentText(),
-        KEYS.REMOTE_BIND_ADDRESS: self.ui.remote_bind_address_edit.text(),
-        KEYS.LOCAL_BIND_ADDRESS: self.ui.local_bind_address_edit.text(),
-    }
 
 
 class Tunnel(QWidget):
@@ -1751,10 +1735,6 @@ class Tunnel(QWidget):
         type_ = self.tunnelconfig.ui.comboBox_tunnel_type.currentText()
         ssh = self.tunnelconfig.ui.comboBox_ssh.currentText()
 
-        # 远程服务器地址
-        remote_bind_address = self.tunnelconfig.ui.remote_bind_address_edit.text()
-        remote_host, remote_port = remote_bind_address.split(':')[0], int(remote_bind_address.split(':')[1])
-
         # 本地服务器地址
         local_bind_address = self.tunnelconfig.ui.local_bind_address_edit.text()
         local_port = int(local_bind_address.split(':')[1])
@@ -1766,22 +1746,27 @@ class Tunnel(QWidget):
         tunnel, ssh_client, transport = None, None, None
         tunnel_id = self.ui.name.text()
         if type_ == '本地':
+            remote_bind_address = self.tunnelconfig.ui.remote_bind_address_edit.text()
+            remote_host, remote_port = remote_bind_address.split(':')[0], int(remote_bind_address.split(':')[1])
             # 启动本地转发隧道
             tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'local', local_port, remote_host,
                                                                       remote_port,
                                                                       ssh_host, ssh_port, ssh_user,
-                                                                      ssh_password)
+                                                                      ssh_password, key_type, key_file)
         if type_ == '远程':
+            remote_bind_address = self.tunnelconfig.ui.remote_bind_address_edit.text()
+            remote_host, remote_port = remote_bind_address.split(':')[0], int(remote_bind_address.split(':')[1])
             # 启动远程转发隧道
             tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'remote', local_port, remote_host,
                                                                       remote_port, ssh_host, ssh_port, ssh_user,
-                                                                      ssh_password)
+                                                                      ssh_password, key_type, key_file)
         if type_ == '动态':
             # 启动动态转发隧道
             tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'dynamic', local_port,
                                                                       ssh_host=ssh_host, ssh_port=ssh_port,
                                                                       ssh_user=ssh_user,
-                                                                      ssh_password=ssh_password)
+                                                                      ssh_password=ssh_password, key_type=key_type,
+                                                                      key_file=key_file)
 
         self.manager.add_tunnel(tunnel_id, tunnel)
         self.manager.ssh_clients[ssh_client] = transport
