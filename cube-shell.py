@@ -1,30 +1,40 @@
+import glob
+import json
 import os
 import pickle
 import platform
 import re
+import shutil
 import sys
 import threading
 import time
 
 import PySide6
 import qdarkstyle
-from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, Slot, QUrl
+from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, Slot, QUrl, QCoreApplication, QTranslator
 from PySide6.QtGui import QIcon, QAction, QTextCursor, QCursor, QCloseEvent, QKeyEvent, QInputMethodEvent, QPixmap, \
     QDragEnterEvent, QDropEvent, QFont, QContextMenuEvent, QKeySequence, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QDialog, QMessageBox, QTreeWidgetItem, \
     QInputDialog, QFileDialog, QTreeWidget, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QToolBar, QMenuBar
+from deepdiff import DeepDiff
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
 from qdarkstyle import DarkPalette, LightPalette
 
+from core.forwarder import ForwarderManager
 from core.frequently_used_commands import TreeSearchApp
 from core.mux import mux
+from core.vars import ICONS, CONF_FILE, CMDS, KEYS
 from function import get_running_data, util, about, theme
 from function.ssh_func import SshClient
 from function.util import format_file_size, has_valid_suffix
 from style.style import updateColor
 from ui import add_config, text_editor, confirm, main, docker_install
+from ui.add_tunnel_config import Ui_AddTunnelConfig
+from ui.tunnel import Ui_Tunnel
+from ui.tunnel_config import Ui_TunnelConfig
+import core.icons
 
 keymap = {
     Qt.Key_Backspace: chr(127).encode(),
@@ -57,7 +67,6 @@ keymap = {
 
 # 主界面逻辑
 class MainDialog(QMainWindow):
-
     def __init__(self, qt_app):
         super().__init__()
         self.app = qt_app  # 将 app 传递并设置为类属性
@@ -74,6 +83,10 @@ class MainDialog(QMainWindow):
         # 读取 JSON 文件内容
         util.THEME = util.read_json(file_path)
 
+        self.data = None
+        self.tunnels = []
+        self.tunnel_refresh()
+
         # 设置拖放行为
         self.setAcceptDrops(True)
 
@@ -84,10 +97,6 @@ class MainDialog(QMainWindow):
         self.ui.Shell.contextMenuEvent = self.showCustomContextMenu
 
         # 菜单栏
-        # self.ui.menuBar = MenuBarController()
-        # self.ui.menuBar.show()
-        # # 添加配置文件
-        # self.ui.menuBar.new_action.triggered.connect(self.showAddConfig)
         self.menuBarController()
 
         self.ssh_conn = None
@@ -105,12 +114,12 @@ class MainDialog(QMainWindow):
         self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
 
         self.ui.discButton.clicked.connect(self.disconnect)
-        self.ui.seeOnline.clicked.connect(self.getRunData)
+        self.ui.showServiceProcess.clicked.connect(self.getRunData)
         self.ui.setWan.clicked.connect(self.getRunData)
         self.ui.setLan.clicked.connect(self.getRunData)
         self.ui.init.clicked.connect(self.getRunData)
-        self.ui.showPort.clicked.connect(self.getRunData)
-        self.ui.webview.clicked.connect(self.toggleTheme)
+        self.ui.reset.clicked.connect(self.getRunData)
+        self.ui.theme.clicked.connect(self.toggleTheme)
         self.ui.timezoneButton.clicked.connect(self.getRunData)
         self.ui.treeWidget.customContextMenuRequested.connect(self.treeRight)
         self.ui.treeWidget.doubleClicked.connect(self.cd)
@@ -124,10 +133,28 @@ class MainDialog(QMainWindow):
         self.start_pos = QPoint()
         self.selection_rect = QRect()
 
-        self.ui.treeWidget333.customContextMenuRequested.connect(self.treeDocker)
+        self.ui.treeWidgetDocker.customContextMenuRequested.connect(self.treeDocker)
 
         self.isConnected = False
         self.startTimer(50)
+
+    # 隧道刷新
+    def tunnel_refresh(self):
+        self.data = util.read_json(CONF_FILE)
+        self.tunnels = []
+
+        # 展示ssh隧道列表
+        if self.data:
+            i = 0
+            for i, name in enumerate(sorted(self.data.keys())):
+                tunnel = Tunnel(name, self.data[name], self)
+                self.tunnels.append(tunnel)
+                self.ui.gridLayout_ssh.addWidget(tunnel, i, 0)
+            self.kill_button = QPushButton('关闭所有隧道')
+            self.kill_button.setIcon(QIcon(ICONS.KILL_SSH))
+            self.kill_button.setFocusPolicy(Qt.NoFocus)
+            self.kill_button.clicked.connect(self.do_killall_ssh)
+            self.ui.gridLayout_ssh.addWidget(self.kill_button, i + 1, 0)
 
     def menuBarController(self):
         # 创建菜单栏
@@ -145,6 +172,12 @@ class MainDialog(QMainWindow):
         new_action.setStatusTip("添加配置")
         file_menu.addAction(new_action)
         new_action.triggered.connect(self.showAddConfig)
+
+        new_ssh_tunnel_action = QAction(QIcon(ICONS.TUNNEL), "&新增SSH隧道", self)
+        new_ssh_tunnel_action.setShortcut("Shift+Ctrl+S")
+        new_ssh_tunnel_action.setStatusTip("新增SSH隧道")
+        file_menu.addAction(new_ssh_tunnel_action)
+        new_ssh_tunnel_action.triggered.connect(self.showAddSshTunnel)
 
         # 创建“主题设置”动作
         theme_action = QAction(QIcon("icons/undo.png"), "&主题设置", self)
@@ -338,7 +371,7 @@ class MainDialog(QMainWindow):
     def initSftp(self):
         self.isConnected = True
         self.ui.discButton.setEnabled(True)
-        self.ui.seeOnline.setEnabled(True)
+        self.ui.showServiceProcess.setEnabled(True)
         self.ui.result.setEnabled(True)
         self.ui.lanIP.setEnabled(True)
         self.ui.wanIP.setEnabled(True)
@@ -347,9 +380,8 @@ class MainDialog(QMainWindow):
         self.ui.setLan.setEnabled(True)
         self.ui.initKey.setEnabled(True)
         self.ui.init.setEnabled(True)
-        self.ui.webview.setEnabled(True)
-        self.ui.showPort.setEnabled(True)
-        self.ui.webview.setEnabled(True)
+        self.ui.theme.setEnabled(True)
+        self.ui.reset.setEnabled(True)
         self.ui.iport.setEnabled(True)
         self.ui.Shell.setEnabled(True)
         self.ui.timezoneButton.setEnabled(True)
@@ -384,7 +416,7 @@ class MainDialog(QMainWindow):
             widget = CustomWidget(item, self.ssh_conn)
             container_layout.addWidget(widget)
 
-            self.ui.gridLayout_3.addWidget(container_widget, row, col)
+            self.ui.gridLayout_7.addWidget(container_widget, row, col)
 
     # 后台获取信息，不打印至程序界面
     def getData2(self, cmd='', pty=False):
@@ -419,7 +451,7 @@ class MainDialog(QMainWindow):
         self.isConnected = False
         self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
         self.ui.discButton.setDisabled(True)
-        self.ui.seeOnline.setDisabled(True)
+        self.ui.showServiceProcess.setDisabled(True)
         self.ui.result.setDisabled(True)
         self.ui.Shell.setDisabled(True)
         self.ui.Shell.setText('')
@@ -437,13 +469,13 @@ class MainDialog(QMainWindow):
         self.ui.setLan.setDisabled(True)
         self.ui.initKey.setDisabled(True)
         self.ui.init.setDisabled(True)
-        self.ui.showPort.setDisabled(True)
+        self.ui.reset.setDisabled(True)
         self.ui.timezoneButton.setDisabled(True)
 
-        self.ui.treeWidget333.clear()
+        self.ui.treeWidgetDocker.clear()
         self.ui.result.clear()
 
-        util.clear_grid_layout(self.ui.gridLayout_3)
+        util.clear_grid_layout(self.ui.gridLayout_7)
 
         self.ui.cpuRate.setValue(0)
         self.ui.diskRate.setValue(0)
@@ -561,6 +593,14 @@ class MainDialog(QMainWindow):
     def send(self, data):
         self.ssh_conn.write(data)
 
+    def do_killall_ssh(self):
+        for tunnel in self.tunnels:
+            tunnel.stop_tunnel()
+        if os.name == 'nt':
+            os.system(CMDS.SSH_KILL_WIN)
+        else:
+            os.system(CMDS.SSH_KILL_NIX)
+
     def closeEvent(self, event):
         """
          窗口关闭事件 当存在通道的时候关闭通道
@@ -573,6 +613,36 @@ class MainDialog(QMainWindow):
         else:
             mux.stop()
 
+        """
+        该函数处理窗口关闭事件，主要功能包括：
+        遍历所有隧道（tunnel）并收集其配置信息。
+        检查收集到的配置与原始数据是否有差异。
+        如果有差异，则备份当前配置文件，并将新配置写入。
+        限制备份文件数量不超过10个，多余备份将被删除。
+        最终接受关闭事件。
+        :param event:
+        :return:
+        """
+        data = {}
+        for tunnel in self.tunnels:
+            name = tunnel.ui.name.text()
+            data[name] = tunnel.tunnelconfig.as_dict()
+
+        # DeepDiff 库用于比较两个复杂数据结构（如字典、列表、集合等）之间的差异，
+        # 能够识别并报告添加、删除或修改的数据项。
+        # 它支持多级嵌套结构的深度比较，适用于调试或数据同步场景。
+        changed = DeepDiff(self.data, data, ignore_order=True)
+        if changed:
+            timestamp = int(time.time())
+            shutil.copy(CONF_FILE, F"{CONF_FILE}-{timestamp}")
+            with open(CONF_FILE, "w") as fp:
+                json.dump(data, fp)
+            backup_configs = glob.glob(F"{CONF_FILE}-*")
+            if len(backup_configs) > 10:
+                for config in sorted(backup_configs, reverse=True)[10:]:
+                    os.remove(config)
+        event.accept()
+
     def inputMethodEvent(self, a0: QInputMethodEvent) -> None:
         cmd = a0.commitString()
         if cmd != '':
@@ -582,7 +652,7 @@ class MainDialog(QMainWindow):
     def getRunData(self, cmd=''):
         sender = self.sender()
         cmd = cmd
-        if sender.objectName() == 'seeOnline':
+        if sender.objectName() == 'showServiceProcess':
             cmd = 'sudo ps -aux'
         elif sender.objectName() == 'init':
             cmd = self.ui.initKey.toPlainText()
@@ -594,7 +664,7 @@ class MainDialog(QMainWindow):
             ip = self.ui.lanIP.text()
             cmd = 'sudo nmcli connection modify eth0 +ipv4.addresses ' + ip + \
                   ' && nmcli connection show eth0'
-        elif sender.objectName() == 'showPort':
+        elif sender.objectName() == 'reset':
             # ip = self.ui.iport.text()
             # cmd = 'sudo nmap -PN ' + ip
             self.ui.initKey.clear()
@@ -735,6 +805,12 @@ class MainDialog(QMainWindow):
         self.ui.addconfwin.dial.pushButton.clicked.connect(self.refreshConf)
         self.ui.addconfwin.dial.pushButton_2.clicked.connect(self.ui.addconfwin.close)
 
+    # 打开增加隧道界面
+    def showAddSshTunnel(self):
+        self.add = AddTunnelConfig(self)
+        self.add.setModal(True)
+        self.add.show()
+
     # 刷新设备列表
     def refreshConf(self):
         if not os.path.exists('conf/config.dat'):
@@ -747,7 +823,8 @@ class MainDialog(QMainWindow):
             c.close()
         i = 0
         self.ui.treeWidget.clear()
-        self.ui.treeWidget.headerItem().setText(0, '设备列表')
+
+        self.ui.treeWidget.headerItem().setText(0, QCoreApplication.translate("MainWindow", "设备列表"))
 
         for k in dic.keys():
             self.ui.treeWidget.addTopLevelItem(QTreeWidgetItem(0))
@@ -934,33 +1011,33 @@ class MainDialog(QMainWindow):
     def refreshDokerInfo(self):
         if self.isConnected:
             info = self.getsysinfo.docker_info
-            self.ui.treeWidget333.clear()
-            self.ui.treeWidget333.headerItem().setText(0, 'docker容器管理：')
+            self.ui.treeWidgetDocker.clear()
+            self.ui.treeWidgetDocker.headerItem().setText(0, 'docker容器管理：')
             if len(info) != 0:
                 i = 0
                 for n in info:
-                    self.ui.treeWidget333.addTopLevelItem(QTreeWidgetItem(0))
-                    self.ui.treeWidget333.topLevelItem(i).setText(0, n)
+                    self.ui.treeWidgetDocker.addTopLevelItem(QTreeWidgetItem(0))
+                    self.ui.treeWidgetDocker.topLevelItem(i).setText(0, n)
                     if i != 0:
-                        self.ui.treeWidget333.topLevelItem(i).setIcon(0, QIcon("icons/icons8-docker-48.png"))
+                        self.ui.treeWidgetDocker.topLevelItem(i).setIcon(0, QIcon("icons/icons8-docker-48.png"))
                     # 设置字体为加粗
                     if i == 0:
                         bold_font = QFont()
                         bold_font.setBold(True)  # 设置字体为加粗
-                        self.ui.treeWidget333.topLevelItem(i).setFont(0, bold_font)
+                        self.ui.treeWidgetDocker.topLevelItem(i).setFont(0, bold_font)
 
                     i += 1
 
                 # 设置列宽为自适应内容
-                for i in range(self.ui.treeWidget333.columnCount()):
-                    self.ui.treeWidget333.resizeColumnToContents(i)
+                for i in range(self.ui.treeWidgetDocker.columnCount()):
+                    self.ui.treeWidgetDocker.resizeColumnToContents(i)
             else:
-                self.ui.treeWidget333.addTopLevelItem(QTreeWidgetItem(0))
-                self.ui.treeWidget333.topLevelItem(0).setText(0, '没有可用的docker容器')
+                self.ui.treeWidgetDocker.addTopLevelItem(QTreeWidgetItem(0))
+                self.ui.treeWidgetDocker.topLevelItem(0).setText(0, '没有可用的docker容器')
         else:
-            self.ui.treeWidget333.clear()
-            self.ui.treeWidget333.addTopLevelItem(QTreeWidgetItem(0))
-            self.ui.treeWidget333.topLevelItem(0).setText(0, '没有可用的docker容器')
+            self.ui.treeWidgetDocker.clear()
+            self.ui.treeWidgetDocker.addTopLevelItem(QTreeWidgetItem(0))
+            self.ui.treeWidgetDocker.topLevelItem(0).setText(0, '没有可用的docker容器')
 
     # 下载文件
     def downloadFile(self):
@@ -1041,9 +1118,9 @@ class MainDialog(QMainWindow):
 
     # 停止docker容器
     def stopDockerContainer(self):
-        focus = self.ui.treeWidget333.currentIndex().row()
+        focus = self.ui.treeWidgetDocker.currentIndex().row()
         if focus != -1:
-            text = self.ui.treeWidget333.topLevelItem(focus).text(0)
+            text = self.ui.treeWidgetDocker.topLevelItem(focus).text(0)
             # 取出前12位字符串
             container_id = text[:12]
             data_ = self.getData2('sudo docker stop ' + container_id)
@@ -1053,9 +1130,9 @@ class MainDialog(QMainWindow):
 
     # 重启docker容器
     def restartDockerContainer(self):
-        focus = self.ui.treeWidget333.currentIndex().row()
+        focus = self.ui.treeWidgetDocker.currentIndex().row()
         if focus != -1:
-            text = self.ui.treeWidget333.topLevelItem(focus).text(0)
+            text = self.ui.treeWidgetDocker.topLevelItem(focus).text(0)
             # 取出前12位字符串
             container_id = text[:12]
             data_ = self.getData2('sudo docker restart ' + container_id)
@@ -1065,9 +1142,9 @@ class MainDialog(QMainWindow):
 
     # 删除docker容器
     def rmDockerContainer(self):
-        focus = self.ui.treeWidget333.currentIndex().row()
+        focus = self.ui.treeWidgetDocker.currentIndex().row()
         if focus != -1:
-            text = self.ui.treeWidget333.topLevelItem(focus).text(0)
+            text = self.ui.treeWidgetDocker.topLevelItem(focus).text(0)
             # 取出前12位字符串
             container_id = text[:12]
             data_ = self.getData2('sudo docker rm ' + container_id)
@@ -1491,9 +1568,292 @@ class InstallDocker(QDialog):
         print("安装成功")
 
 
+class TunnelConfig(QDialog):
+    """
+    初始化配置对话框并设置UI元素值；
+    监听UI变化以更新SSH命令；
+    提供复制SSH命令和
+    """
+
+    def __init__(self, parent, data):
+        super(TunnelConfig, self).__init__(parent)
+
+        self.ui = Ui_TunnelConfig()
+        self.ui.setupUi(self)
+
+        self.ui.comboBox_tunnel_type.setCurrentText(data.get(KEYS.TUNNEL_TYPE))
+        self.ui.comboBox_ssh.setCurrentText(data.get(KEYS.DEVICE_NAME))
+        self.ui.remote_bind_address_edit.setText(data.get(KEYS.REMOTE_BIND_ADDRESS))
+        self.ui.local_bind_address_edit.setText(data.get(KEYS.LOCAL_BIND_ADDRESS))
+        self.ui.browser_open.setText(data.get(KEYS.BROWSER_OPEN))
+        self.ui.copy.clicked.connect(self.do_copy_ssh_command)
+
+        self.render_ssh_command()
+
+    def render_ssh_command(self):
+        text = self.ui.local_bind_address_edit.text()
+        ssh = self.ui.comboBox_ssh.currentText()
+        username, password, host, key_type, key_file = open_data(ssh)
+        if not util.check_server_accessibility(host.split(':')[0], int(host.split(':')[1])):
+            QMessageBox.warning(self, "连接超时", "服务器无法连接，请检查网络或服务器状态。")
+            return
+
+        ssh_command = (f"ssh -L {int(text.split(':')[1])}:{self.ui.remote_bind_address_edit.text()} "
+                       f"{username}@{host.split(':')[0]}")
+        self.ui.ssh_command.setText(ssh_command)
+
+    def do_copy_ssh_command(self):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(self.ui.ssh_command.text())
+
+    def as_dict(self):
+        return {
+            KEYS.TUNNEL_TYPE: self.ui.comboBox_tunnel_type.currentText(),
+            KEYS.BROWSER_OPEN: self.ui.browser_open.text(),
+            KEYS.DEVICE_NAME: self.ui.comboBox_ssh.currentText(),
+            KEYS.REMOTE_BIND_ADDRESS: self.ui.remote_bind_address_edit.text(),
+            KEYS.LOCAL_BIND_ADDRESS: self.ui.local_bind_address_edit.text(),
+        }
+
+
+class AddTunnelConfig(QDialog):
+    """
+    初始化配置对话框并设置UI元素值；
+    监听UI变化以更新SSH命令；
+    提供复制SSH命令和
+    """
+
+    def __init__(self, parent=None):
+        super(AddTunnelConfig, self).__init__(parent)
+
+        self.tunnel = Ui_AddTunnelConfig()
+        self.tunnel.setupUi(self)
+        self.tunnel.add_tunnel.accepted.connect(self.addTunnel)
+        self.tunnel.add_tunnel.rejected.connect(TunnelConfig.reject)
+
+    def addTunnel(self):
+
+        remote = self.tunnel.remote_bind_address_edit.text()
+        tunnel_type = self.tunnel.comboBox_tunnel_type.currentText()
+        if remote == '' and tunnel_type != '动态':
+            QMessageBox.critical(self, "警告", "请填写远程绑定地址")
+            return
+        split = remote.split(':')
+        if len(split) != 2:
+            QMessageBox.critical(self, "警告", "远程绑定地址格式不正确，请检查")
+            return
+        local = self.tunnel.local_bind_address_edit.text()
+        if local == '':
+            QMessageBox.critical(self, "警告", "请填写本地绑定地址")
+            return
+        local_split = local.split(':')
+        if len(local_split) != 2:
+            QMessageBox.critical(self, "警告", "本地绑定地址格式不正确，请检查")
+            return
+        if self.tunnel.ssh_tunnel_name.text() == '':
+            QMessageBox.critical(self, "警告", "请填写隧道名称")
+            return
+
+        dic = {
+            KEYS.TUNNEL_TYPE: self.tunnel.comboBox_tunnel_type.currentText(),
+            KEYS.BROWSER_OPEN: self.tunnel.browser_open.text(),
+            KEYS.DEVICE_NAME: self.tunnel.comboBox_ssh.currentText(),
+            KEYS.REMOTE_BIND_ADDRESS: self.tunnel.remote_bind_address_edit.text(),
+            KEYS.LOCAL_BIND_ADDRESS: self.tunnel.local_bind_address_edit.text(),
+        }
+
+        file_path = 'conf/tunnel.json'
+        # 读取 JSON 文件内容
+        data = util.read_json(file_path)
+        data[self.tunnel.ssh_tunnel_name.text()] = dic
+
+        # 将修改后的数据写回 JSON 文件
+        util.write_json(file_path, data)
+        self.close()
+
+        util.clear_grid_layout(self.parent().ui.gridLayout_ssh)
+        self.parent().tunnel_refresh()
+
+    def alarm(self, alart):
+        self.addTunnel.alarmbox = QMessageBox()
+        self.addTunnel.alarmbox.setWindowIcon(QIcon("Resources/icon.ico"))
+        self.addTunnel.alarmbox.setText(alart)
+        self.addTunnel.alarmbox.setWindowTitle('错误提示')
+        self.addTunnel.alarmbox.show()
+
+
+def as_dict(self):
+    return {
+        KEYS.TUNNEL_TYPE: self.ui.comboBox_tunnel_type.currentText(),
+        KEYS.BROWSER_OPEN: self.ui.browser_open.text(),
+        KEYS.DEVICE_NAME: self.ui.comboBox_ssh.currentText(),
+        KEYS.REMOTE_BIND_ADDRESS: self.ui.remote_bind_address_edit.text(),
+        KEYS.LOCAL_BIND_ADDRESS: self.ui.local_bind_address_edit.text(),
+    }
+
+
+class Tunnel(QWidget):
+    """
+    创建单个隧道实例，包括启动、停止隧道以及打开浏览器的功能。
+    """
+
+    def __init__(self, name, data, parent=None):
+        super(Tunnel, self).__init__(parent)
+
+        self.ui = Ui_Tunnel()
+        self.ui.setupUi(self)
+        self.manager = ForwarderManager()
+
+        self.tunnelconfig = TunnelConfig(self, data)
+        self.tunnelconfig.setWindowTitle(name)
+        self.tunnelconfig.setModal(True)
+        self.ui.name.setText(name)
+
+        self.tunnelconfig.icon = F"./icons/{name}.png"
+
+        if not os.path.exists(self.tunnelconfig.icon):
+            self.tunnelconfig.icon = ICONS.TUNNEL
+
+        self.ui.icon.setPixmap(QPixmap(self.tunnelconfig.icon))
+        self.ui.action_tunnel.clicked.connect(self.do_tunnel)
+        self.ui.action_settings.clicked.connect(self.tunnelconfig.show)
+        self.ui.action_open.clicked.connect(self.do_open_browser)
+        self.ui.delete_ssh.clicked.connect(lambda: self.delete_tunnel(parent))
+
+        self.process = False
+
+    def do_open_browser(self):
+        browser_open = self.tunnelconfig.ui.browser_open.text()
+        if browser_open:
+            QDesktopServices.openUrl(QUrl(browser_open))
+
+    def do_tunnel(self):
+        if self.process:
+            try:
+                self.stop_tunnel()
+            except Exception as e:
+                print(f"Error stopping tunnel: {e}")
+        else:
+            try:
+                self.start_tunnel()
+            except Exception as e:
+                print(f"Error starting tunnel: {e}")
+        # Ensure UI is updated after the tunnel operation completes
+        self.update_ui()
+
+    def update_ui(self):
+        if self.process:
+            self.ui.action_tunnel.setIcon(QIcon(ICONS.STOP))
+        else:
+            self.ui.action_tunnel.setIcon(QIcon(ICONS.START))
+
+    def start_tunnel(self):
+        type_ = self.tunnelconfig.ui.comboBox_tunnel_type.currentText()
+        ssh = self.tunnelconfig.ui.comboBox_ssh.currentText()
+
+        # 远程服务器地址
+        remote_bind_address = self.tunnelconfig.ui.remote_bind_address_edit.text()
+        remote_host, remote_port = remote_bind_address.split(':')[0], int(remote_bind_address.split(':')[1])
+
+        # 本地服务器地址
+        local_bind_address = self.tunnelconfig.ui.local_bind_address_edit.text()
+        local_port = int(local_bind_address.split(':')[1])
+
+        # 获取SSH信息
+        ssh_user, ssh_password, host, key_type, key_file = open_data(ssh)
+        ssh_host, ssh_port = host.split(':')[0], int(host.split(':')[1])
+
+        tunnel, ssh_client, transport = None, None, None
+        tunnel_id = self.ui.name.text()
+        if type_ == '本地':
+            # 启动本地转发隧道
+            tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'local', local_port, remote_host,
+                                                                      remote_port,
+                                                                      ssh_host, ssh_port, ssh_user,
+                                                                      ssh_password)
+        if type_ == '远程':
+            # 启动远程转发隧道
+            tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'remote', local_port, remote_host,
+                                                                      remote_port, ssh_host, ssh_port, ssh_user,
+                                                                      ssh_password)
+        if type_ == '动态':
+            # 启动动态转发隧道
+            tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'dynamic', local_port,
+                                                                      ssh_host=ssh_host, ssh_port=ssh_port,
+                                                                      ssh_user=ssh_user,
+                                                                      ssh_password=ssh_password)
+
+        self.manager.add_tunnel(tunnel_id, tunnel)
+        self.manager.ssh_clients[ssh_client] = transport
+        if transport:
+            self.process = True
+
+        self.ui.action_tunnel.setIcon(QIcon(ICONS.STOP))
+        self.do_open_browser()
+
+    def stop_tunnel(self):
+        try:
+            # self.process.kill()
+            name_text = self.ui.name.text()
+            self.manager.remove_tunnel(name_text)
+            self.process = False
+
+        except Exception as e:
+            print(f"Error stopping process: {e}")
+        self.ui.action_tunnel.setIcon(QIcon(ICONS.START))
+
+    # 删除隧道
+    def delete_tunnel(self, parent):
+
+        # 创建消息框
+        reply = QMessageBox()
+        reply.setWindowTitle('确认删除')
+        reply.setText(f'您确定要删除此隧道吗？这将无法恢复！')
+        reply.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+        # 设置按钮文本为中文
+        yes_button = reply.button(QMessageBox.Yes)
+        no_button = reply.button(QMessageBox.No)
+        yes_button.setText("确定")
+        no_button.setText("取消")
+        # 显示对话框并等待用户响应
+        reply.exec()
+
+        if reply.clickedButton() == yes_button:
+            name_text = self.ui.name.text()
+            file_path = 'conf/tunnel.json'
+            # 读取 JSON 文件内容
+            data = util.read_json(file_path)
+            del data[name_text]
+            # 将修改后的数据写回 JSON 文件
+            util.write_json(file_path, data)
+            # 刷新隧道列表
+            util.clear_grid_layout(parent.ui.gridLayout_ssh)
+            parent.tunnel_refresh()
+        else:
+            pass
+
+
+def open_data(ssh):
+    with open('conf/config.dat', 'rb') as c:
+        conf = pickle.loads(c.read())[ssh]
+    username, password, host, key_type, key_file = '', '', '', '', ''
+    if len(conf) == 3:
+        return username, password, host, '', ''
+    else:
+        return conf[0], conf[1], conf[2], conf[3], conf[4]
+
+
 if __name__ == '__main__':
     print("PySide6 version:", PySide6.__version__)
     app = QApplication(sys.argv)
+
+    translator = QTranslator()
+    # 加载编译后的 .qm 文件
+    translator.load("translations.qm")
+
+    # 安装翻译
+    app.installTranslator(translator)
 
     window = MainDialog(app)
 

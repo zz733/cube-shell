@@ -2,11 +2,10 @@
 from PySide6 import QtCore, QtWidgets, QtGui
 from PySide6.QtCore import (QCoreApplication, QMetaObject, QSize, Qt)
 from PySide6.QtGui import (QCursor,
-                           QIcon, QFont)
-from PySide6.QtWidgets import (QFormLayout, QGridLayout, QHBoxLayout,
-                               QLabel, QLineEdit, QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy,
-                               QSpacerItem, QSplitter, QTabWidget, QTextBrowser,
-                               QTreeWidget, QVBoxLayout, QWidget)
+                           QFont)
+from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
+                               QProgressBar, QPushButton, QSizePolicy, QSplitter,
+                               QTabWidget, QTextBrowser, QTreeWidget, QVBoxLayout, QWidget)
 
 from style.style import PrimaryButtonStyle, InfoButtonStyle, DangerButtonStyle
 
@@ -40,7 +39,6 @@ class Ui_MainWindow(object):
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
 
         self.treeWidget = QTreeWidget(self.gridLayoutWidget)
-        self.treeWidget.setObjectName(u"treeWidget")
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -54,12 +52,19 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.treeWidget, 1, 0, 1, 1)
 
+        # 删除默认的展示框
+        # self.lineEdit = QLineEdit(self.gridLayoutWidget)
+        # self.lineEdit.setObjectName(u"lineEdit")
+        #
+        # self.gridLayout.addWidget(self.lineEdit, 0, 0, 1, 1)
+
         # 创建初始的 QLineEdit
         self.line_edits = []  # 保存所有 QLineEdit 的列表
 
         self.splitter_3.addWidget(self.gridLayoutWidget)
         self.splitter_255 = QSplitter(self.splitter_3)
         self.splitter_255.setObjectName(u"splitter_255")
+        # self.splitter_255.setMinimumSize(QSize(0, 0))
         self.splitter_255.setMaximumSize(QSize(16777215, 16777215))
         self.splitter_255.setCursor(QCursor(Qt.CursorShape.SizeHorCursor))
         self.splitter_255.setMouseTracking(False)
@@ -72,14 +77,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.horizontalLayout_3.setContentsMargins(3, -1, 3, -1)
-        self.theme = QPushButton(self.gridLayoutWidget_2)
-        self.theme.setTabletTracking(False)
-        self.theme.setStyleSheet(PrimaryButtonStyle)
-        self.theme.setCursor(QCursor(Qt.PointingHandCursor))
-        self.theme.setFocusPolicy(QtCore.Qt.ClickFocus)
-        self.theme.setObjectName(u"theme")
+        self.webview = QPushButton(self.gridLayoutWidget_2)
+        self.webview.setTabletTracking(False)
+        self.webview.setStyleSheet(PrimaryButtonStyle)
+        self.webview.setCursor(QCursor(Qt.PointingHandCursor))
+        self.webview.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.webview.setObjectName(u"webview")
 
-        self.horizontalLayout_3.addWidget(self.theme)
+        self.horizontalLayout_3.addWidget(self.webview)
 
         self.iport = QLineEdit(self.gridLayoutWidget_2)
         self.iport.setReadOnly(True)
@@ -87,25 +92,25 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.iport)
 
-        self.showServiceProcess = QPushButton(self.gridLayoutWidget_2)
-        self.showServiceProcess.setEnabled(False)
-        self.showServiceProcess.setTabletTracking(False)
-        self.showServiceProcess.setStyleSheet(PrimaryButtonStyle)
-        self.showServiceProcess.setCursor(QCursor(Qt.PointingHandCursor))
-        self.showServiceProcess.setFocusPolicy(QtCore.Qt.ClickFocus)
-        self.showServiceProcess.setObjectName(u"showServiceProcess")
+        self.seeOnline = QPushButton(self.gridLayoutWidget_2)
+        self.seeOnline.setEnabled(False)
+        self.seeOnline.setTabletTracking(False)
+        self.seeOnline.setStyleSheet(PrimaryButtonStyle)
+        self.seeOnline.setCursor(QCursor(Qt.PointingHandCursor))
+        self.seeOnline.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.seeOnline.setObjectName(u"seeOnline")
 
-        self.horizontalLayout_3.addWidget(self.showServiceProcess)
+        self.horizontalLayout_3.addWidget(self.seeOnline)
 
-        self.reset = QPushButton(self.gridLayoutWidget_2)
-        self.reset.setEnabled(False)
-        self.reset.setTabletTracking(False)
-        self.reset.setStyleSheet(InfoButtonStyle)
-        self.reset.setCursor(QCursor(Qt.PointingHandCursor))
-        self.reset.setFocusPolicy(QtCore.Qt.ClickFocus)
-        self.reset.setObjectName(u"reset")
+        self.showPort = QPushButton(self.gridLayoutWidget_2)
+        self.showPort.setEnabled(False)
+        self.showPort.setTabletTracking(False)
+        self.showPort.setStyleSheet(InfoButtonStyle)
+        self.showPort.setCursor(QCursor(Qt.PointingHandCursor))
+        self.showPort.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.showPort.setObjectName(u"showPort")
 
-        self.horizontalLayout_3.addWidget(self.reset)
+        self.horizontalLayout_3.addWidget(self.showPort)
 
         self.gridLayout_4.addLayout(self.horizontalLayout_3, 3, 0, 1, 2)
 
@@ -153,6 +158,7 @@ class Ui_MainWindow(object):
         self.initKey = QPlainTextEdit(self.gridLayoutWidget_2)
         self.initKey.setEnabled(False)
         self.initKey.setObjectName(u"initKey")
+        # self.initKey.setMinimumSize(QSize(260, 50))
 
         self.horizontalLayout.addWidget(self.initKey)
 
@@ -303,6 +309,7 @@ class Ui_MainWindow(object):
         font.setPointSize(14)
         self.Shell.setFont(font)
         self.Shell.setObjectName(u"Shell")
+        # self.Shell.setMinimumSize(QSize(234, 338))
         self.Shell.setSizeIncrement(QSize(0, 0))
         self.Shell.setMouseTracking(True)
         self.Shell.setReadOnly(True)
@@ -332,52 +339,45 @@ class Ui_MainWindow(object):
             }
             QTabBar::tab:selected {
                 border-color: #9B9B9B;
-                margin-bottom: 1px; /* 使选中的 tab 突出 */
+                margin-bottom: -1px; /* 使选中的 tab 突出 */
             }
         """)
         self.tabWidget.setObjectName(u"tabWidget")
-        self.tab_docker_manager = QWidget()
-        self.tab_docker_manager.setObjectName(u"tab_docker_manager")
-        self.horizontalLayout_4 = QHBoxLayout(self.tab_docker_manager)
+        self.tab_dockermanager = QWidget()
+        self.tab_dockermanager.setObjectName(u"tab_dockermanager")
+        self.horizontalLayout_4 = QHBoxLayout(self.tab_dockermanager)
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.verticalLayout_4 = QVBoxLayout()
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
 
-        self.treeWidgetDocker = QTreeWidget(self.tab_docker_manager)
+        self.treeWidget333 = QTreeWidget(self.tab_dockermanager)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.treeWidget.sizePolicy().hasHeightForWidth())
-        self.treeWidgetDocker.setSizePolicy(sizePolicy)
-        self.treeWidgetDocker.setCursor(QCursor(Qt.ArrowCursor))
-        self.treeWidgetDocker.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.treeWidgetDocker.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.treeWidgetDocker.setObjectName(u"treeWidgetDocker")
+        self.treeWidget333.setSizePolicy(sizePolicy)
+        self.treeWidget333.setCursor(QCursor(Qt.ArrowCursor))
+        self.treeWidget333.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.treeWidget333.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.treeWidget333.setObjectName(u"treeWidget333")
 
-        self.horizontalLayout_2.addWidget(self.treeWidgetDocker)
+        self.verticalLayout_4.addWidget(self.treeWidget333)
 
-        self.horizontalLayout_4.addLayout(self.horizontalLayout_2)
+        self.horizontalLayout_4.addLayout(self.verticalLayout_4)
 
-        self.tabWidget.addTab(self.tab_docker_manager, "")
+        self.tabWidget.addTab(self.tab_dockermanager, "")
+        self.tab_soft = QWidget()
+        self.tab_soft.setObjectName(u"tab_soft")
+        self.horizontalLayout_6 = QHBoxLayout(self.tab_soft)
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.horizontalLayout_6.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout_3 = QGridLayout()
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
 
-        self.tab_docker_soft = QWidget()
-        self.tab_docker_soft.setObjectName(u"tab_docker_soft")
-        self.horizontalLayout_8 = QHBoxLayout(self.tab_docker_soft)
-        self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
-        self.horizontalLayout_8.setContentsMargins(0, 0, 0, 0)
-        self.gridLayout_7 = QGridLayout()
-        self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.horizontalLayout_8.addLayout(self.gridLayout_7)
-        self.tabWidget.addTab(self.tab_docker_soft, "")
+        self.horizontalLayout_6.addLayout(self.gridLayout_3)
 
-        self.tab_ssh_manager = QWidget()
-        self.tab_ssh_manager.setObjectName(u"tab_ssh_manager")
-        self.gridLayout_ssh = QGridLayout(self.tab_ssh_manager)
-        self.gridLayout_ssh.setContentsMargins(10, 0, 10, 0)
-        self.gridLayout_ssh.setObjectName(u"formLayout")
-
-        self.tabWidget.addTab(self.tab_ssh_manager, "")
+        self.tabWidget.addTab(self.tab_soft, "")
 
         self.verticalLayout_2.addWidget(self.tabWidget)
 
@@ -420,14 +420,13 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"cubeShell", None))
         ___qtreewidgetitem = self.treeWidget.headerItem()
         ___qtreewidgetitem.setText(0, QCoreApplication.translate("MainWindow", u"\u8bbe\u5907\u5217\u8868", None));
-        self.theme.setText(QCoreApplication.translate("MainWindow", u"\u5207\u6362\u4e3b\u9898", None))
+        self.webview.setText(QCoreApplication.translate("MainWindow", u"切换主题", None))
         self.iport.setText(QCoreApplication.translate("MainWindow", u"192.168.137.0/24", None))
-        self.showServiceProcess.setText(
-            QCoreApplication.translate("MainWindow", u"\u67e5\u770b\u670d\u52a1\u8fdb\u7a0b", None))
-        self.reset.setText(QCoreApplication.translate("MainWindow", u"\u91cd\u7f6e", None))
+        self.seeOnline.setText(QCoreApplication.translate("MainWindow", u"查看服务进程", None))
+        self.showPort.setText(QCoreApplication.translate("MainWindow", u"重置", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"\u516c\u7f51IP", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"\u5185\u7f51IP", None))
         self.lanIP.setText(QCoreApplication.translate("MainWindow", u"192.168.137.100/24", None))
@@ -446,12 +445,21 @@ class Ui_MainWindow(object):
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"\u5185\u5b58\u4f7f\u7528\u7387", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"CPU\u4f7f\u7528\u7387", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"\u78c1\u76d8\u4f7f\u7528\u7387", None))
-        ___qtreewidgetitem1 = self.treeWidgetDocker.headerItem()
-        ___qtreewidgetitem1.setText(0, QCoreApplication.translate("MainWindow", u"\u8bbe\u5907\u5217\u8868", None));
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_docker_manager),
+        self.Shell.setMarkdown("")
+        self.Shell.setHtml(QCoreApplication.translate("MainWindow",
+                                                      u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+                                                      "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
+                                                      "p, li { white-space: pre-wrap; }\n"
+                                                      "hr { height: 1px; border-width: 0; }\n"
+                                                      "li.unchecked::marker { content: \"\\2610\"; }\n"
+                                                      "li.checked::marker { content: \"\\2612\"; }\n"
+                                                      "</style></head><body style=\" font-family:'.AppleSystemUIFont'; font-size:13pt; font-weight:400; font-style:normal;\">\n"
+                                                      "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>",
+                                                      None))
+        ___qtreewidgetitem1 = self.treeWidget333.headerItem()
+        ___qtreewidgetitem1.setText(0, QCoreApplication.translate("MainWindow", u"docker容器管理：", None));
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_dockermanager),
                                   QCoreApplication.translate("MainWindow", u"\u5bb9\u5668\u7ba1\u7406", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_docker_soft),
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_soft),
                                   QCoreApplication.translate("MainWindow", u"\u5e38\u7528\u5bb9\u5668", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_ssh_manager),
-                                  QCoreApplication.translate("MainWindow", u"端口转发", None))
     # retranslateUi
