@@ -456,7 +456,7 @@
                      </property>
                      <property name="icon">
                       <iconset>
-                       <normaloff>../icons/start_tunnel.png</normaloff>../icons/start_tunnel.png</iconset>
+                       <normaloff>../icons/off.png</normaloff>../icons/off.png</iconset>
                      </property>
                      <property name="iconSize">
                       <size>
