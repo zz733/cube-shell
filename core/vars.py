@@ -17,7 +17,7 @@ class ICONS:
     TUNNEL = "icons/tunnel-diode.png"
     START = "icons/open.png"
     STOP = "icons/off.png"
-    KILL_SSH = ":icons/kill.png"
+    KILL_SSH = "icons/on-off.png"
 
 
 class CMDS:

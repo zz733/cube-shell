@@ -40,7 +40,7 @@ class ColorThemeList(QTableWidget):
 
         for i, (theme_name, theme_color) in enumerate(self.themes.items()):
             button = ColorThemeButton(theme_name, theme_color)
-            button.clicked.connect(lambda _, idx=i: self.onThemeClick(idx))
+            button.clicked.connect(lambda _, idx=i: self.onThemeClick(idx, parent))
             self.buttons.append(button)
             # 将 QPushButton 放置在一个 QTableWidgetItem 中
             item = QTableWidgetItem()
@@ -84,7 +84,7 @@ class ColorThemeList(QTableWidget):
             self.item(row, 0).setBackground(QColor("#FFFF00"))  # 设置背景色为黄色
             self.item(row, 0).setForeground(QColor("#FF0000"))  # 设置文本颜色为红色
 
-    def onThemeClick(self, index):
+    def onThemeClick(self, index, parent):
         # 打印当前选择的主题信息
         theme_name, theme_color = list(self.themes.items())[index]
         print(theme_name, theme_color)
@@ -101,17 +101,15 @@ class ColorThemeList(QTableWidget):
         util.THEME = data
         QMessageBox.information(self, "切换主题", "主题切换成功")
 
-        # print(f"Selected Theme: {theme_name} with color {theme_color}")
-        # # 确保 self.parent() 是 MainWindow 实例
-        # if isinstance(self.parent(), MainWindow):
-        #     self.parent().stacked_widget.setCurrentIndex(index)  # 使用 self.parent() 获取父对象
+        # 关闭窗口
+        parent.close()
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Color Theme Selector")
+        self.setWindowTitle("主题切换")
 
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)

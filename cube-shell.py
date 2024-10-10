@@ -34,7 +34,6 @@ from ui import add_config, text_editor, confirm, main, docker_install
 from ui.add_tunnel_config import Ui_AddTunnelConfig
 from ui.tunnel import Ui_Tunnel
 from ui.tunnel_config import Ui_TunnelConfig
-import core.icons
 
 keymap = {
     Qt.Key_Backspace: chr(127).encode(),
