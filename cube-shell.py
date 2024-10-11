@@ -1703,7 +1703,9 @@ class AddTunnelConfig(QDialog):
         util.write_json(file_path, data)
         self.close()
 
-        util.clear_grid_layout(self.parent().ui.gridLayout_ssh)
+        util.clear_grid_layout(self.parent().ui.gridLayout_tunnel_tabs)
+        util.clear_grid_layout(self.parent().ui.gridLayout_kill_all)
+
         self.parent().tunnel_refresh()
 
     def readonly_remote_bind_address_edit(self):
@@ -1856,7 +1858,8 @@ class Tunnel(QWidget):
             # 将修改后的数据写回 JSON 文件
             util.write_json(file_path, data)
             # 刷新隧道列表
-            util.clear_grid_layout(parent.ui.gridLayout_ssh)
+            util.clear_grid_layout(parent.ui.gridLayout_tunnel_tabs)
+            util.clear_grid_layout(parent.ui.gridLayout_kill_all)
             parent.tunnel_refresh()
         else:
             pass

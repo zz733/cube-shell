@@ -125,7 +125,7 @@ class Ui_AddTunnelConfig(object):
     # setupUi
 
     def retranslateUi(self, TunnelConfig):
-        TunnelConfig.setWindowTitle(QCoreApplication.translate("TunnelConfig", u"Dialog", None))
+        TunnelConfig.setWindowTitle(QCoreApplication.translate("TunnelConfig", u"添加SSH隧道", None))
         # self.add_tunnel.setText(QCoreApplication.translate("TunnelConfig", u"\u65b0\u589e", None))
         self.label_browser_open.setText(
             QCoreApplication.translate("TunnelConfig", u"\u6d4f\u89c8\u5668\u6253\u5f00", None))
