@@ -33,7 +33,8 @@ class ForwarderManager:
                 ssh_client.close()
             del self.ssh_clients[ssh_client]
 
-    def start_tunnel(self, tunnel_id, tunnel_type, local_port, remote_host=None, remote_port=None, ssh_host=None,
+    def start_tunnel(self, tunnel_id, tunnel_type, local_host, local_port, remote_host=None, remote_port=None,
+                     ssh_host=None,
                      ssh_port=None, ssh_user=None, ssh_password=None, key_type=None, key_file=None):
 
         # 加载私钥
@@ -60,11 +61,13 @@ class ForwarderManager:
             transport = ssh_client.get_transport()
 
             if tunnel_type == 'local':
-                tunnel = LocalPortForwarder(ssh_client, tunnel_id, transport, remote_host, remote_port, local_port)
+                tunnel = LocalPortForwarder(ssh_client, tunnel_id, transport, remote_host, remote_port, local_host,
+                                            local_port)
             elif tunnel_type == 'remote':
-                tunnel = RemotePortForwarder(ssh_client, tunnel_id, transport, local_port, remote_host, remote_port)
+                tunnel = RemotePortForwarder(ssh_client, tunnel_id, transport, local_host, local_port, remote_host,
+                                             remote_port)
             elif tunnel_type == 'dynamic':
-                tunnel = DynamicPortForwarder(ssh_client, tunnel_id, transport, local_port)
+                tunnel = DynamicPortForwarder(ssh_client, tunnel_id, transport, local_host, local_port)
             else:
                 raise ValueError("Invalid tunnel type.")
 
@@ -83,13 +86,14 @@ class LocalPortForwarder(threading.Thread):
     本地端口转发
     """
 
-    def __init__(self, ssh_client, tunnel_id, ssh_transport, remote_host, remote_port, local_port):
+    def __init__(self, ssh_client, tunnel_id, ssh_transport, remote_host, remote_port, local_host, local_port):
         super(LocalPortForwarder, self).__init__()
         self.daemon = True
         self.tunnel_id = tunnel_id
         self.ssh_transport = ssh_transport
         self.remote_host = remote_host
         self.remote_port = remote_port
+        self.local_host = local_host
         self.local_port = local_port
         self.ssh_client = ssh_client
         self.running = False
@@ -115,12 +119,12 @@ class LocalPortForwarder(threading.Thread):
             self.listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
-                self.listen_socket.bind(('127.0.0.1', self.local_port))  # 增加异常处理
+                self.listen_socket.bind((self.local_host, self.local_port))  # 增加异常处理
             except Exception as e:
                 logging.error(f"Error binding socket: {e}")
                 return
             self.listen_socket.listen(100)
-            logging.info(f"Listening for connections on 127.0.0.1:{self.local_port}...")
+            logging.info(f"Listening for connections on {self.local_host}:{self.local_port}...")
 
             while self.running:
                 try:
@@ -193,11 +197,12 @@ class RemotePortForwarder(threading.Thread):
     远程端口转发
     """
 
-    def __init__(self, ssh_client, tunnel_id, ssh_transport, local_port, remote_host, remote_port):
+    def __init__(self, ssh_client, tunnel_id, ssh_transport, local_host, local_port, remote_host, remote_port):
         super(RemotePortForwarder, self).__init__()
         self.daemon = True
         self.tunnel_id = tunnel_id
         self.ssh_transport = ssh_transport
+        self.local_host = local_host
         self.local_port = local_port
         self.remote_host = remote_host
         self.remote_port = remote_port
@@ -258,105 +263,115 @@ class RemotePortForwarder(threading.Thread):
 
 
 class DynamicPortForwarder(threading.Thread):
-    """
-    动态端口转发
-    """
-
-    def __init__(self, ssh_client, tunnel_id, ssh_transport, local_port):
-        super(DynamicPortForwarder, self).__init__()
-        self.daemon = True
+    def __init__(self, ssh_client, tunnel_id, ssh_transport, local_host, local_port):
+        super().__init__()
         self.tunnel_id = tunnel_id
         self.ssh_transport = ssh_transport
-        self.local_port = local_port
         self.ssh_client = ssh_client
-        self.running = False
-        self._shutdown_event = threading.Event()
+        self.local_host = local_host
+        self.local_port = local_port
+        self.server_socket = None
+        self._stop_event = threading.Event()
+        # self.running = False
         self.channels = []
         self.channels_lock = threading.Lock()  # 添加锁
 
+    def run(self):
+        try:
+            # 创建一个SOCKS5代理服务器
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server_socket.bind((self.local_host, self.local_port))
+            self.server_socket.listen(10)
+
+            logging.info(f"SOCKS5 proxy listening on {self.local_host}:{self.local_port}")
+
+            while not self._stop_event.is_set():
+                client_socket, addr = self.server_socket.accept()
+                logging.info(f"Accepted connection from {addr}")
+                threading.Thread(target=self._handle_client, args=(client_socket,)).start()
+
+        except Exception as e:
+            logging.error(f"Error occurred in DynamicPortForwarder thread.: {e}")
+            self.stop()
+
     def stop(self):
-        self.running = False
-        self._shutdown_event.set()
+        self._stop_event.set()
+        if self.server_socket:
+            self.server_socket.close()
         # 关闭所有已打开的通道
         with self.channels_lock:
             for channel in self.channels:
                 channel.close()
             self.channels.clear()
 
-    def run(self):
-        self.running = True
-        self._shutdown_event.clear()
-        self.ssh_transport.request_port_forward('', self.local_port)
-
-        while self.running and not self._shutdown_event.is_set():
-            chan = self.ssh_transport.accept(1000)
-            if chan is None or not self.running:
-                continue
-
-            thr = threading.Thread(target=self.handle, args=(chan,))
-            thr.setDaemon(True)
-            thr.start()
-
-    def handle(self, chan):
+    def _handle_client(self, client_socket):
         try:
-            # 接受目标地址类型
-            address_type = ord(chan.recv(1))
-            if address_type == 1:  # IPv4
-                target_addr = socket.inet_ntoa(chan.recv(4))
-            elif address_type == 3:  # Domain name
-                domain_length = ord(chan.recv(1))
-                target_addr = chan.recv(domain_length).decode('utf-8')
-            else:
-                logging.warning("Unsupported address type.")
-                chan.close()
-                return
+            # 接收客户端请求
+            request = client_socket.recv(4096)
 
-            # 接受目标端口
-            target_port = int.from_bytes(chan.recv(2), byteorder='big')
+            # 解析SOCKS5请求
+            if request[0] == 0x05:  # SOCKS5协议
+                # 发送SOCKS5认证响应
+                client_socket.send(b"\x05\x00")
 
-            logging.info(f"SOCKS request to {target_addr}:{target_port}")
+                # 接收SOCKS5连接请求
+                request = client_socket.recv(4096)
 
-            # 通过 SSH 隧道创建新的通道
-            channel = self.ssh_transport.open_channel(
-                kind='direct-tcpip',
-                dest_addr=(target_addr, target_port),
-                src_addr=chan.getpeername()
-            )
+                # 解析目标地址和端口
+                dst_addr_type = request[3]
+                if dst_addr_type == 0x01:  # IPv4
+                    dst_addr = socket.inet_ntoa(request[4:8])
+                    dst_port = int.from_bytes(request[8:10], byteorder='big')
+                elif dst_addr_type == 0x03:  # 域名
+                    dst_addr = request[5:5 + request[4]].decode('utf-8')
+                    dst_port = int.from_bytes(request[5 + request[4]:7 + request[4]], byteorder='big')
+                elif dst_addr_type == 0x04:  # IPv6
+                    dst_addr = socket.inet_ntop(socket.AF_INET6, request[4:20])
+                    dst_port = int.from_bytes(request[20:22], byteorder='big')
+                else:
+                    raise Exception("Unsupported address type")
 
-            if channel:
-                with self.channels_lock:
-                    self.channels.append(channel)
-                # 创建转发线程
-                threading.Thread(target=self.forward_data, args=(chan, channel)).start()
-            else:
-                print("Failed to open channel.")
-                chan.close()
+                # 创建到远程服务器的通道
+                try:
+                    channel = self.ssh_transport.open_channel("direct-tcpip", (dst_addr, dst_port),
+                                                              (self.local_host, 0))
+                    if channel:
+                        with self.channels_lock:
+                            self.channels.append(channel)
+                except paramiko.ChannelException as e:
+                    logging.error(f"Failed to open SSH channel to {dst_addr}:{dst_port}. Error: {e}")
+                    client_socket.send(b"\x05\x05\x00\x01\x00\x00\x00\x00\x00\x00")  # 发送SOCKS5连接失败响应
+                    client_socket.close()
+                    return
+
+                # 发送SOCKS5连接成功响应
+                response = b"\x05\x00\x00\x01" + socket.inet_aton("0.0.0.0") + dst_port.to_bytes(2, byteorder='big')
+                client_socket.send(response)
+
+                try:
+                    # 转发数据
+                    while not self._stop_event.is_set():
+                        r, w, x = select.select([client_socket, channel], [], [], 1)
+                        if client_socket in r:
+                            data = client_socket.recv(4096)
+                            if len(data) == 0:
+                                break
+                            channel.send(data)
+                        if channel in r:
+                            data = channel.recv(4096)
+                            if len(data) == 0:
+                                break
+                            client_socket.send(data)
+                finally:
+                    channel.close()
+                    client_socket.close()
+                    with self.channels_lock:
+                        self.channels.remove(channel)
+                    logging.info("Connection closed.")
+
         except Exception as e:
-            print(f"Error handling channel: {e}")
-            chan.close()
-
-    def forward_data(self, client_socket, channel):
-        try:
-            while self.running and not self._shutdown_event.is_set():
-                # 读取客户端发送的数据
-                r, w, x = select.select([client_socket, channel], [], [])
-                if client_socket in r:
-                    data = client_socket.recv(1024)
-                    if len(data) <= 0:
-                        break
-                    channel.send(data)
-                if channel in r:
-                    data = channel.recv(1024)
-                    if len(data) <= 0:
-                        break
-                    client_socket.send(data)
-        finally:
-            channel.close()
+            logging.error(f"Error handling channel: {e}")
             client_socket.close()
-            with self.channels_lock:
-                self.channels.remove(channel)
-            print("Connection closed.")
 
 
-# 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

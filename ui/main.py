@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-from PySide6 import QtCore, QtWidgets, QtGui
-from PySide6.QtCore import (QCoreApplication, QMetaObject, QSize, Qt)
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect,
+                            QSize, Qt)
 from PySide6.QtGui import (QCursor,
-                           QIcon, QFont)
+                           QFont)
 from PySide6.QtWidgets import (QFormLayout, QGridLayout, QHBoxLayout,
-                               QLabel, QLineEdit, QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy,
-                               QSpacerItem, QSplitter, QTabWidget, QTextBrowser,
+                               QLabel, QLineEdit, QPlainTextEdit, QProgressBar, QPushButton, QScrollArea,
+                               QSizePolicy, QSplitter, QTabWidget, QTextBrowser,
                                QTreeWidget, QVBoxLayout, QWidget)
 
 from style.style import PrimaryButtonStyle, InfoButtonStyle, DangerButtonStyle
@@ -15,8 +16,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(988, 678)
-        MainWindow.setFocusPolicy(QtCore.Qt.NoFocus)
+        #MainWindow.resize(988, 678)
         self.centralwidget = QWidget(MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -27,7 +27,6 @@ class Ui_MainWindow(object):
 
         self.gridLayout_5 = QGridLayout(self.centralwidget)
         self.gridLayout_5.setObjectName(u"gridLayout_5")
-
         self.splitter_3 = QSplitter(self.centralwidget)
         self.splitter_3.setObjectName(u"splitter_3")
         self.splitter_3.setCursor(QCursor(Qt.CursorShape.SizeHorCursor))
@@ -40,7 +39,6 @@ class Ui_MainWindow(object):
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
 
         self.treeWidget = QTreeWidget(self.gridLayoutWidget)
-        self.treeWidget.setObjectName(u"treeWidget")
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -50,7 +48,6 @@ class Ui_MainWindow(object):
         self.treeWidget.setFocusPolicy(QtCore.Qt.NoFocus)
         self.treeWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.treeWidget.setObjectName(u"treeWidget")
-        self.treeWidget.setMinimumSize(QSize(200, 0))
 
         self.gridLayout.addWidget(self.treeWidget, 1, 0, 1, 1)
 
@@ -60,6 +57,7 @@ class Ui_MainWindow(object):
         self.splitter_3.addWidget(self.gridLayoutWidget)
         self.splitter_255 = QSplitter(self.splitter_3)
         self.splitter_255.setObjectName(u"splitter_255")
+        self.splitter_255.setMinimumSize(QSize(0, 0))
         self.splitter_255.setMaximumSize(QSize(16777215, 16777215))
         self.splitter_255.setCursor(QCursor(Qt.CursorShape.SizeHorCursor))
         self.splitter_255.setMouseTracking(False)
@@ -360,7 +358,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.addLayout(self.horizontalLayout_2)
 
         self.tabWidget.addTab(self.tab_docker_manager, "")
-
         self.tab_docker_soft = QWidget()
         self.tab_docker_soft.setObjectName(u"tab_docker_soft")
         self.horizontalLayout_8 = QHBoxLayout(self.tab_docker_soft)
@@ -368,14 +365,39 @@ class Ui_MainWindow(object):
         self.horizontalLayout_8.setContentsMargins(0, 0, 0, 0)
         self.gridLayout_7 = QGridLayout()
         self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.horizontalLayout_8.addLayout(self.gridLayout_7)
-        self.tabWidget.addTab(self.tab_docker_soft, "")
 
+        self.horizontalLayout_8.addLayout(self.gridLayout_7)
+
+        self.tabWidget.addTab(self.tab_docker_soft, "")
         self.tab_ssh_manager = QWidget()
         self.tab_ssh_manager.setObjectName(u"tab_ssh_manager")
-        self.gridLayout_ssh = QGridLayout(self.tab_ssh_manager)
-        self.gridLayout_ssh.setContentsMargins(10, 0, 10, 0)
-        self.gridLayout_ssh.setObjectName(u"formLayout")
+        self.formLayout = QFormLayout(self.tab_ssh_manager)
+        self.formLayout.setObjectName(u"formLayout")
+        self.formLayout.setContentsMargins(0, 0, 0, 0)
+        self.scrollArea = QScrollArea(self.tab_ssh_manager)
+        self.scrollArea.setObjectName(u"scrollArea")
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setContentsMargins(0, 0, 0, 0)
+        self.scrollAreaWidgetContents = QWidget()
+        self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 838, 153))
+        self.gridLayout_11 = QGridLayout(self.scrollAreaWidgetContents)
+        self.gridLayout_11.setObjectName(u"gridLayout_11")
+
+        self.gridLayout_tunnel_tabs = QGridLayout()
+        self.gridLayout_tunnel_tabs.setObjectName(u"gridLayout_tunnel_tabs")
+
+        self.gridLayout_11.addLayout(self.gridLayout_tunnel_tabs, 0, 0, 1, 1)
+
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+        self.formLayout.setWidget(0, QFormLayout.SpanningRole, self.scrollArea)
+
+        self.gridLayout_kill_all = QGridLayout()
+        self.gridLayout_kill_all.setObjectName(u"gridLayout_kill_all")
+        self.gridLayout_kill_all.setContentsMargins(0, 0, 0, 0)
+
+        self.formLayout.setLayout(1, QFormLayout.SpanningRole, self.gridLayout_kill_all)
 
         self.tabWidget.addTab(self.tab_ssh_manager, "")
 
@@ -453,5 +475,5 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_docker_soft),
                                   QCoreApplication.translate("MainWindow", u"\u5e38\u7528\u5bb9\u5668", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_ssh_manager),
-                                  QCoreApplication.translate("MainWindow", u"端口转发", None))
+                                  QCoreApplication.translate("MainWindow", u"SSH隧道", None))
     # retranslateUi
