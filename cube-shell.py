@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import json
 import os
@@ -8,10 +9,12 @@ import shutil
 import sys
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import PySide6
 import qdarkstyle
-from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, Slot, QUrl, QCoreApplication, QTranslator
+from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, Slot, QUrl, QCoreApplication, \
+    QTranslator
 from PySide6.QtGui import QIcon, QAction, QTextCursor, QCursor, QCloseEvent, QKeyEvent, QInputMethodEvent, QPixmap, \
     QDragEnterEvent, QDropEvent, QFont, QContextMenuEvent, QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QDialog, QMessageBox, QTreeWidgetItem, \
@@ -66,6 +69,8 @@ keymap = {
 
 # 主界面逻辑
 class MainDialog(QMainWindow):
+    initSftpSignal = Signal()
+
     def __init__(self, qt_app):
         super().__init__()
         self.app = qt_app  # 将 app 传递并设置为类属性
@@ -100,7 +105,7 @@ class MainDialog(QMainWindow):
 
         self.ssh_conn = None
         self.timer1, self.timer2 = None, None
-        self.getsysinfo = None
+        self.sysinfo = None
         self.dir_tree_now = []
         self.pwd = ''
         self.file_name = ''
@@ -112,7 +117,7 @@ class MainDialog(QMainWindow):
 
         self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
 
-        self.ui.discButton.clicked.connect(self.disconnect)
+        self.ui.discButton.clicked.connect(self.off)
         self.ui.showServiceProcess.clicked.connect(self.getRunData)
         self.ui.setWan.clicked.connect(self.getRunData)
         self.ui.setLan.clicked.connect(self.getRunData)
@@ -136,6 +141,58 @@ class MainDialog(QMainWindow):
 
         self.isConnected = False
         self.startTimer(50)
+        # 连接信号和槽
+        self.initSftpSignal.connect(self.on_initSftpSignal)
+
+        # 键盘长按左右键处理
+        self.pressed_keys = {}
+        self.long_press_duration = 500  # 长按时长阈值，单位毫秒
+        self.timer = QTimer(self)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.printMessage)
+
+    def keyPressEvent(self, event):
+        text = str(event.text())
+        key = event.key()
+
+        modifiers = event.modifiers()
+        ctrl = modifiers == Qt.ControlModifier
+        if ctrl and key == Qt.Key_Plus:
+            self.zoom_in()
+        elif ctrl and key == Qt.Key_Minus:
+            self.zoom_out()
+        else:
+            if text and key != Qt.Key_Backspace:
+                self.send(text.encode("utf-8"))
+            else:
+                s = keymap.get(key)
+                if s:
+                    self.send(s)
+
+        event.accept()
+
+    def keyReleaseEvent(self, event: QKeyEvent):
+        text = str(event.text())
+        key = event.key()
+
+        if text and key == Qt.Key_Space:
+            self.send(text.encode("utf-8"))
+        elif text and key == Qt.Key_Tab:
+            self.send(text.encode("utf-8"))
+        elif key == Qt.Key_Up:
+            # 点击上键查询历史命令
+            self.send(b'\x1b[A')
+        elif key == Qt.Key_Down:
+            # 点击下键查询历史命令
+            self.send(b'\x1b[B')
+        elif key == Qt.Key_Left:
+            self.ssh_conn.buffer_write = b'\x1b[D'
+            self.send(b'\x1b[D')
+            # self.ssh_conn.screen.cursor.x = self.ssh_conn.screen.cursor.x - 1
+        elif key == Qt.Key_Right:
+            self.ssh_conn.buffer_write = b'\x1b[C'
+            self.send(b'\x1b[C')
+            # self.ssh_conn.screen.cursor.x = self.ssh_conn.screen.cursor.x + 1
 
     def showEvent(self, event):
         self.center()
@@ -346,7 +403,7 @@ class MainDialog(QMainWindow):
         self.send('clear'.encode('utf8') + b'\n')
 
     # 连接服务器
-    def connect(self):
+    def run(self):
 
         focus = self.ui.treeWidget.currentIndex().row()
         if focus != -1:
@@ -370,17 +427,34 @@ class MainDialog(QMainWindow):
             try:
                 self.ssh_conn = SshClient(host.split(':')[0], int(host.split(':')[1]), username, password,
                                           key_type, key_file)
-                # 创建一个线程来处理 SSH 连接，以避免阻塞主线程。
-                threading.Thread(target=self.ssh_conn.connect).start()
-
+                # 启动一个线程来异步执行 SSH 连接
+                threading.Thread(target=self.connect_ssh_thread, daemon=True).start()
                 self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = username, password, \
                     host, key_type, key_file
-                self.initSftp()
-
             except Exception as e:
                 self.ui.Shell.setPlaceholderText(str(e))
         else:
             self.alarm('请选择一台设备！')
+
+    def connect_ssh_thread(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            loop.run_until_complete(self.async_connect_ssh())
+        finally:
+            loop.close()
+
+    async def async_connect_ssh(self):
+        # 创建一个线程池执行器
+        executor = ThreadPoolExecutor(max_workers=1)
+
+        # 在线程池中执行同步的 connect 方法
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(executor, self.ssh_conn.connect)
+
+        # 异步初始化 SFTP
+        self.initSftpSignal.emit()
 
     # 初始化sftp和控制面板
     def initSftp(self):
@@ -400,12 +474,11 @@ class MainDialog(QMainWindow):
         self.ui.iport.setEnabled(True)
         self.ui.Shell.setEnabled(True)
         self.ui.timezoneButton.setEnabled(True)
-        self.getsysinfo = get_running_data.DevicInfo(username=self.ssh_username, password=self.ssh_password,
-                                                     host=self.ssh_ip, key_type=self.key_type,
-                                                     key_file=self.key_file)
+        self.sysinfo = get_running_data.DevicInfo(username=self.ssh_username, password=self.ssh_password,
+                                                  host=self.ssh_ip, key_type=self.key_type,
+                                                  key_file=self.key_file)
 
-        threading.Thread(target=self.getsysinfo.get_datas, daemon=True).start()
-        time.sleep(0.02)
+        threading.Thread(target=self.sysinfo.get_datas, daemon=True).start()
         self.flushSysInfo()
         self.refreshDokerInfo()
         self.flushDokerInfo()
@@ -433,6 +506,9 @@ class MainDialog(QMainWindow):
 
             self.ui.gridLayout_7.addWidget(container_widget, row, col)
 
+    def on_initSftpSignal(self):
+        self.initSftp()
+
     # 后台获取信息，不打印至程序界面
     def getData2(self, cmd='', pty=False):
         try:
@@ -453,10 +529,10 @@ class MainDialog(QMainWindow):
             else:
                 self.alarm('文件无法前往，右键编辑文件！')
         elif not self.isConnected:
-            self.connect()
+            self.run()
 
     # 断开服务器
-    def disconnect(self):
+    def off(self):
         self.timer1.stop()
         self.timer2.stop()
 
@@ -468,8 +544,8 @@ class MainDialog(QMainWindow):
         self.ui.discButton.setDisabled(True)
         self.ui.showServiceProcess.setDisabled(True)
         self.ui.result.setDisabled(True)
-        self.ui.Shell.setDisabled(True)
         self.ui.Shell.setText('')
+        self.ui.Shell.setStyleSheet('')
 
         self.ui.treeWidget.setColumnCount(1)
         self.ui.treeWidget.setHeaderLabels(["设备列表"])
@@ -496,7 +572,7 @@ class MainDialog(QMainWindow):
         self.ui.diskRate.setValue(0)
         self.ui.memRate.setValue(0)
 
-        self.getsysinfo.disconnect()
+        self.sysinfo.disconnect()
         self.refreshConf()
 
     def timerEvent(self, event):
@@ -511,7 +587,6 @@ class MainDialog(QMainWindow):
             self.update()
         except:
             pass
-            # traceback.print_exc()
 
     # 更新终端输出
     def updateTerminal(self):
@@ -563,47 +638,11 @@ class MainDialog(QMainWindow):
         # 如果没有这串代码，执行器就会疯狂执行代码
         self.ssh_conn.screen.dirty.clear()
 
-    def keyPressEvent(self, event: QKeyEvent):
-        text = str(event.text())
-        key = event.key()
-
-        modifiers = event.modifiers()
-        ctrl = modifiers == Qt.ControlModifier
-        if ctrl and key == Qt.Key_Plus:
-            self.zoom_in()
-        elif ctrl and key == Qt.Key_Minus:
-            self.zoom_out()
-        else:
-            if text and key != Qt.Key_Backspace:
-                self.send(text.encode("utf-8"))
-            else:
-                s = keymap.get(key)
-                if s:
-                    self.send(s)
-        event.accept()
-
-    def keyReleaseEvent(self, event: QKeyEvent):
-        text = str(event.text())
-        key = event.key()
-
-        if text and key == Qt.Key_Space:
-            self.send(text.encode("utf-8"))
-        elif text and key == Qt.Key_Tab:
-            self.send(text.encode("utf-8"))
-        elif key == Qt.Key_Up:
-            # 点击上键查询历史命令
-            self.send(b'\x1b[A')
-        elif key == Qt.Key_Down:
-            # 点击下键查询历史命令
-            self.send(b'\x1b[B')
-        elif key == Qt.Key_Left:
-            self.ssh_conn.buffer_write = b'\x1b[D'
-            self.send(b'\x1b[D')
-            # self.ssh_conn.screen.cursor.x = self.ssh_conn.screen.cursor.x - 1
-        elif key == Qt.Key_Right:
-            self.ssh_conn.buffer_write = b'\x1b[C'
-            self.send(b'\x1b[C')
-            # self.ssh_conn.screen.cursor.x = self.ssh_conn.screen.cursor.x + 1
+    def printMessage(self, key):
+        if key == Qt.Key.Key_Right:
+            print("我爱中国")
+        elif key == Qt.Key.Key_Left:
+            print("长按左方向键事件")
 
     def send(self, data):
         self.ssh_conn.write(data)
@@ -1004,9 +1043,9 @@ class MainDialog(QMainWindow):
     # 刷新设备状态信息功能
     def refreshSysInfo(self):
         if self.isConnected:
-            cpu_use = self.getsysinfo.cpu_use
-            mem_use = self.getsysinfo.mem_use
-            dissk_use = self.getsysinfo.disk_use
+            cpu_use = self.sysinfo.cpu_use
+            mem_use = self.sysinfo.mem_use
+            dissk_use = self.sysinfo.disk_use
             self.ui.cpuRate.setValue(cpu_use)
             self.ui.cpuRate.setStyleSheet(updateColor(cpu_use))
             self.ui.memRate.setValue(mem_use)
@@ -1025,7 +1064,7 @@ class MainDialog(QMainWindow):
 
     def refreshDokerInfo(self):
         if self.isConnected:
-            info = self.getsysinfo.docker_info
+            info = self.sysinfo.docker_info
             self.ui.treeWidgetDocker.clear()
             self.ui.treeWidgetDocker.headerItem().setText(0, 'docker容器管理：')
             if len(info) != 0:
@@ -1873,6 +1912,10 @@ def open_data(ssh):
         return username, password, host, '', ''
     else:
         return conf[0], conf[1], conf[2], conf[3], conf[4]
+
+
+def test():
+    print("ceshi xinhao")
 
 
 if __name__ == '__main__':

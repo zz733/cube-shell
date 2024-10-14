@@ -2,9 +2,9 @@
 import pickle
 
 from PySide6.QtCore import (QCoreApplication, QMetaObject, QSize, Qt)
-from PySide6.QtGui import (QFont, QIcon, QCursor)
+from PySide6.QtGui import (QIcon, QCursor)
 from PySide6.QtWidgets import (QComboBox, QGridLayout,
-                               QHBoxLayout, QLabel, QLineEdit, QPushButton,
+                               QHBoxLayout, QLabel, QLineEdit,
                                QSizePolicy, QSpacerItem, QDialogButtonBox)
 
 from style.style import PrimaryButtonStyle
@@ -95,9 +95,6 @@ class Ui_AddTunnelConfig(object):
 
         self.browser_open = QLineEdit(TunnelConfig)
         self.browser_open.setObjectName(u"browser_open")
-        font = QFont()
-        font.setFamilies([u"Monospace"])
-        self.browser_open.setFont(font)
 
         self.gridLayout.addWidget(self.browser_open, 7, 1, 1, 2)
 
@@ -113,7 +110,6 @@ class Ui_AddTunnelConfig(object):
 
         self.ssh_tunnel_name = QLineEdit(TunnelConfig)
         self.ssh_tunnel_name.setObjectName(u"ssh__tunnel_name")
-        self.ssh_tunnel_name.setFont(font)
         self.ssh_tunnel_name.setReadOnly(False)
 
         self.gridLayout.addWidget(self.ssh_tunnel_name, 2, 1, 1, 2)

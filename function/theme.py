@@ -158,11 +158,20 @@ class MainWindow(QMainWindow):
 
         self.color_theme_list = ColorThemeList({
             "rrt": "#000000",
+            "paraiso-light": "#E7E9DA",
+            "staroffice": "#FFFFFF",
             "paraiso-dark": "#321D2F",
             "native": "#202020",
             "monokai": "#272821",
             "lightbulb": "#1B2332",
             "xcode": "#FFFFFF",
+            "fruity": "#000000",
+            "inkpot": "#1E1E28",
+            "material": "#233239",
+            "one-dark": "#272C35",
+            "zenburn": "#3F3F3F",
+            "solarized-dark": "#002C37",
+            "tango": "#F8F8F8"
         }, self)  # 传递 MainWindow 实例作为父对象
 
         theme_list_layout.addWidget(self.color_theme_list)  # 将 ColorThemeList 添加到布局

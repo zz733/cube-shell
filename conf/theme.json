@@ -1,6 +1,6 @@
 {
-  "font": "Al Nile",
-  "theme": "monokai",
-  "theme_color": "#272821",
-  "version": "1.4.0"
+    "font": "Al Nile",
+    "theme": "rrt",
+    "theme_color": "#000000",
+    "version": "1.4.1"
 }

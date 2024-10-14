@@ -42,10 +42,10 @@ class SshClient(BaseBackend):
         try:
             if self.private_key:
                 self.conn.connect(hostname=self.host, port=self.port,
-                                  username=self.username, pkey=self.private_key, timeout=5)
+                                  username=self.username, pkey=self.private_key, timeout=10)
             else:
                 self.conn.connect(hostname=self.host, port=self.port,
-                                  username=self.username, password=self.password, timeout=5)
+                                  username=self.username, password=self.password, timeout=10)
         except paramiko.ssh_exception.AuthenticationException:
             print("Authentication failed.")
         except Exception as e:
