@@ -524,7 +524,7 @@ class MainDialog(QMainWindow):
             focus = self.ui.treeWidget.currentIndex().row()
             if focus != -1 and self.dir_tree_now[focus][0].startswith('d'):
                 self.pwd = self.getData2('cd ' + self.pwd + '/' + self.ui.treeWidget.topLevelItem(focus).text(0) +
-                                         ' && sudo pwd')[:-1]
+                                         ' && pwd')[:-1]
                 self.refreshDirs()
             else:
                 self.alarm('文件无法前往，右键编辑文件！')
@@ -707,24 +707,24 @@ class MainDialog(QMainWindow):
         sender = self.sender()
         cmd = cmd
         if sender.objectName() == 'showServiceProcess':
-            cmd = 'sudo ps -aux'
+            cmd = 'ps -aux'
         elif sender.objectName() == 'init':
             cmd = self.ui.initKey.toPlainText()
         elif sender.objectName() == 'setWan':
             ip, gateway = self.ui.wanIP.text(), self.ui.gateway.text()
-            cmd = 'sudo nmcli connection modify eth0 ipv4.addresses ' + ip + ' ipv4.gateway ' + gateway + \
+            cmd = 'nmcli connection modify eth0 ipv4.addresses ' + ip + ' ipv4.gateway ' + gateway + \
                   ' && nmcli connection show eth0'
         elif sender.objectName() == 'setLan':
             ip = self.ui.lanIP.text()
-            cmd = 'sudo nmcli connection modify eth0 +ipv4.addresses ' + ip + \
+            cmd = 'nmcli connection modify eth0 +ipv4.addresses ' + ip + \
                   ' && nmcli connection show eth0'
         elif sender.objectName() == 'reset':
             # ip = self.ui.iport.text()
-            # cmd = 'sudo nmap -PN ' + ip
+            # cmd = 'nmap -PN ' + ip
             self.ui.initKey.clear()
-            cmd = 'sudo clear'
+            cmd = 'clear'
         elif sender.objectName() == 'timezoneButton':
-            cmd = 'sudo timedatectl set-timezone "Asia/Shanghai" && sudo hwclock'
+            cmd = 'timedatectl set-timezone "Asia/Shanghai" && hwclock'
         else:
             pass
         self.ui.progressBar.setValue(20)
@@ -923,8 +923,8 @@ class MainDialog(QMainWindow):
 
     # 获取当前目录列表
     def getDirNow(self):
-        pwd = self.getData2('cd ' + self.pwd + ' && sudo pwd')
-        dir_info = self.getData2(cmd='cd ' + self.pwd + ' && sudo ls -al').split('\n')
+        pwd = self.getData2('cd ' + self.pwd + ' && pwd')
+        dir_info = self.getData2(cmd='cd ' + self.pwd + ' && ls -al').split('\n')
         dir_n_info = []
         for d in dir_info:
             d_list = get_running_data.DevicInfo.del_more_space(d)
@@ -946,7 +946,7 @@ class MainDialog(QMainWindow):
             if has_valid_suffix(self.file_name):
                 self.alarm('不支持编辑此文件！')
                 return
-            text = self.getData2('sudo cat ' + self.pwd + '/' + self.file_name)
+            text = self.getData2('cat ' + self.pwd + '/' + self.file_name)
             if text != 'error' and text != '\n':
                 self.ui.addTextEditWin = TextEditor(title=self.file_name, old_text=text)
                 self.ui.addTextEditWin.show()
@@ -1010,12 +1010,12 @@ class MainDialog(QMainWindow):
         # 将双引号转义为转义字符
         escaped_string = nt.replace("\"", '\\"')
         if sig == 0:
-            self.getData2('sudo echo -e "' + escaped_string + '" > ' + self.pwd + '/' + self.file_name)
+            self.getData2('echo -e "' + escaped_string + '" > ' + self.pwd + '/' + self.file_name)
             self.ui.addTextEditWin.new_text = self.ui.addTextEditWin.old_text
             self.ui.addTextEditWin.te.chk.close()
             self.ui.addTextEditWin.close()
         elif sig == 1:
-            self.getData2('sudo echo -e "' + escaped_string + '" > ' + self.pwd + '/' + self.file_name)
+            self.getData2('echo -e "' + escaped_string + '" > ' + self.pwd + '/' + self.file_name)
             self.ui.addTextEditWin.old_text = nt
 
     # 删除设备配置文件
@@ -1177,7 +1177,7 @@ class MainDialog(QMainWindow):
             text = self.ui.treeWidgetDocker.topLevelItem(focus).text(0)
             # 取出前12位字符串
             container_id = text[:12]
-            data_ = self.getData2('sudo docker stop ' + container_id)
+            data_ = self.getData2('docker stop ' + container_id)
             print('stop----', data_)
             time.sleep(1)  # 延迟一秒
             self.refreshDokerInfo()
@@ -1189,7 +1189,7 @@ class MainDialog(QMainWindow):
             text = self.ui.treeWidgetDocker.topLevelItem(focus).text(0)
             # 取出前12位字符串
             container_id = text[:12]
-            data_ = self.getData2('sudo docker restart ' + container_id)
+            data_ = self.getData2('docker restart ' + container_id)
             print('restart----', data_)
             time.sleep(1)  # 延迟一秒
             self.refreshDokerInfo()
@@ -1201,7 +1201,7 @@ class MainDialog(QMainWindow):
             text = self.ui.treeWidgetDocker.topLevelItem(focus).text(0)
             # 取出前12位字符串
             container_id = text[:12]
-            data_ = self.getData2('sudo docker rm ' + container_id)
+            data_ = self.getData2('docker rm ' + container_id)
             print('rm----', data_)
             time.sleep(1)  # 延迟一秒
             self.refreshDokerInfo()

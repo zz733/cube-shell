@@ -73,17 +73,17 @@ class DevicInfo:
             try:
                 if self.close_sig == 0:
                     break
-                stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='sudo cat /proc/stat')
+                stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='cat /proc/stat')
                 cpuinfo1 = stdout.read().decode('utf8')
                 #time.sleep(1)
 
-                stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='sudo cat /proc/stat')
+                stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='cat /proc/stat')
                 cpuinfo2 = stdout.read().decode('utf8')
 
-                stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='sudo df')
+                stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='df')
                 diskinfo = stdout.read().decode('utf8')
 
-                stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='sudo free')
+                stdin, stdout, stderr = self.conn.exec_command(timeout=10, bufsize=100, command='free')
                 meminfo = stdout.read().decode('utf8')
 
                 # 命令：列出所有doker 容器
