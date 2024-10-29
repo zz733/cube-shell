@@ -35,6 +35,7 @@ class Multiplexer(object):
        """
         self.backend_index[backend.id] = backend
         self.read_index[backend.get_read_wait()] = backend
+        print(f"Backend {backend.id} added")
 
         if self.stop_flag:
             self.stop_flag = False
@@ -49,6 +50,7 @@ class Multiplexer(object):
        - backend: 要移除并关闭的后台处理对象。
        """
         if backend.id in self.backend_index:
+            print(f"Backend {backend.id} removed and closed")
             self.read_index.pop(self.backend_index.pop(backend.id).get_read_wait())
 
         if len(self.backend_index) <= 0:
@@ -68,13 +70,15 @@ class Multiplexer(object):
             read_wait_list = [a.get_read_wait() for a in self.backend_index.values()]
             if read_wait_list:
                 try:
-                    read_ready_list, write_ready_list, error_ready_list = select.select(read_wait_list, [], [])
-                except:
+                    read_ready_list, write_ready_list, error_ready_list = select.select(read_wait_list, [], [], 1)
+                except Exception as e:
+                    print(f"Select error: {e}")
                     read_ready_list = []
 
                 for read_item in read_ready_list:
                     backend = self.read_index.get(read_item)
                     if backend:
+                        print(f"Reading from backend {backend.id}")
                         backend.read()
             else:
                 time.sleep(1)

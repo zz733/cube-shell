@@ -12,7 +12,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string/>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_5">
@@ -70,135 +70,23 @@
        </property>
        <widget class="QWidget" name="gridLayoutWidget_2">
         <layout class="QGridLayout" name="gridLayout_4">
-         <item row="3" column="0" colspan="2">
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <property name="leftMargin">
-            <number>3</number>
-           </property>
-           <property name="rightMargin">
-            <number>3</number>
-           </property>
-           <item>
-            <widget class="QPushButton" name="theme">
-             <property name="text">
-              <string>切换主题</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="iport">
-             <property name="text">
-              <string>192.168.137.0/24</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="showServiceProcess">
-             <property name="text">
-              <string>查看服务进程</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="reset">
-             <property name="text">
-              <string>重置</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="0" column="1">
-          <layout class="QGridLayout" name="gridLayout_2">
-           <property name="rightMargin">
-            <number>3</number>
-           </property>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>公网IP</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>内网IP</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="lanIP">
-             <property name="text">
-              <string>192.168.137.100/24</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="wanIP">
-             <property name="text">
-              <string>192.168.1.250/24</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>网关</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QLineEdit" name="gateway">
-             <property name="text">
-              <string>192.168.1.1</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="2" column="0" colspan="2">
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <property name="leftMargin">
-            <number>3</number>
-           </property>
-           <property name="rightMargin">
-            <number>3</number>
-           </property>
-           <item>
-            <widget class="QPlainTextEdit" name="initKey">
-             <property name="minimumSize">
-              <size>
-               <width>260</width>
-               <height>50</height>
-              </size>
-             </property>
-             <property name="placeholderText">
-              <string>请复制服务端秘钥，或键入需要运行的命令，请注意是否需要增加sudo</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="init">
-             <property name="text">
-              <string>初始化
-（运行命令）</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
          <item row="4" column="0" colspan="2">
           <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="spacing">
+            <number>2</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
            <item>
-            <widget class="QProgressBar" name="progressBar">
-             <property name="value">
-              <number>24</number>
+            <widget class="QLineEdit" name="search_box">
+             <property name="placeholderText">
+              <string>搜索...</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QTextBrowser" name="result"/>
+            <widget class="QTableWidget" name="result"/>
            </item>
           </layout>
          </item>
@@ -224,23 +112,9 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="timezoneButton">
+            <widget class="QPushButton" name="theme">
              <property name="text">
-              <string>设置时区</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="setWan">
-             <property name="text">
-              <string>设置公网</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="setLan">
-             <property name="text">
-              <string>设置内网</string>
+              <string>切换主题</string>
              </property>
             </widget>
            </item>
@@ -254,45 +128,124 @@
            <property name="rightMargin">
             <number>3</number>
            </property>
-           <item row="2" column="1">
-            <widget class="QProgressBar" name="diskRate">
-             <property name="value">
-              <number>24</number>
+           <item row="5" column="1">
+            <widget class="QLineEdit" name="operatingSystem">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QProgressBar" name="cpuRate">
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>网络下行</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QProgressBar" name="diskRate">
              <property name="value">
-              <number>24</number>
+              <number>0</number>
              </property>
             </widget>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="label_2">
              <property name="text">
-              <string>内存使用率</string>
+              <string>内存监控</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label">
+           <item row="7" column="1">
+            <widget class="QLineEdit" name="kernelVersion">
              <property name="text">
-              <string>CPU使用率</string>
+              <string/>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
             <widget class="QProgressBar" name="memRate">
              <property name="value">
-              <number>24</number>
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QProgressBar" name="cpuRate">
+             <property name="value">
+              <number>0</number>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="label_3">
              <property name="text">
-              <string>磁盘使用率</string>
+              <string>磁盘监控</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>操作系统</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>内核版本</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>网络上行</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>CPU监控</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QLineEdit" name="kernel">
+             <property name="text">
+              <string>Linux</string>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>内核</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLineEdit" name="networkUpload">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLineEdit" name="networkDownload">
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -337,19 +290,152 @@
            <widget class="QWidget" name="verticalLayoutWidget">
             <layout class="QVBoxLayout" name="verticalLayout">
              <item>
-              <widget class="QTextBrowser" name="Shell">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>456</height>
-                </size>
-               </property>
+              <widget class="QTabWidget" name="ShellTab">
                <property name="maximumSize">
                 <size>
                  <width>16777215</width>
-                 <height>16777193</height>
+                 <height>16777215</height>
                 </size>
                </property>
+               <property name="sizeIncrement">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QTabWidget::tab-bar { left: 0px; }</string>
+               </property>
+               <property name="currentIndex">
+                <number>0</number>
+               </property>
+               <widget class="QWidget" name="index">
+                <attribute name="title">
+                 <string>首页</string>
+                </attribute>
+                <layout class="QVBoxLayout" name="verticalLayout_5">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_6">
+                   <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+                    <widget class="QWidget" name="widget" native="true">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>517</height>
+                      </size>
+                     </property>
+                     <layout class="QGridLayout" name="gridLayout_2">
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>117</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>117</number>
+                      </property>
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <item row="2" column="0">
+                       <widget class="QLabel" name="label_11">
+                        <property name="text">
+                         <string>帮助 Shift+Command+P</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="6" column="0">
+                       <widget class="QLabel" name="label_13">
+                        <property name="text">
+                         <string>查找命令行 Shift+Command+C</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="0" column="0">
+                       <widget class="QLabel" name="label_7">
+                        <property name="text">
+                         <string>添加配置 Shift+Command+A</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="4" column="0">
+                       <widget class="QLabel" name="label_12">
+                        <property name="text">
+                         <string>关于 Shift+Command+B</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="8" column="0">
+                       <widget class="QLabel" name="label_15">
+                        <property name="text">
+                         <string>导出配置 Shift+Command+E</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="7" column="0">
+                       <widget class="QLabel" name="label_14">
+                        <property name="text">
+                         <string>导入配置 Shift+Command+I</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0">
+                       <widget class="QLabel" name="label_9">
+                        <property name="text">
+                         <string>添加隧道 Shift+Command+S</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+               <widget class="QWidget" name="tab_shell">
+                <attribute name="title">
+                 <string>127.0.0.1</string>
+                </attribute>
+                <layout class="QVBoxLayout" name="verticalLayout_7">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QTextBrowser" name="Shell"/>
+                 </item>
+                </layout>
+               </widget>
               </widget>
              </item>
             </layout>
@@ -417,9 +503,27 @@
                </widget>
                <widget class="QWidget" name="tab_ssh_manager">
                 <attribute name="title">
-                 <string>SSH 隧道管理器</string>
+                 <string>SSH隧道</string>
                 </attribute>
                 <layout class="QFormLayout" name="formLayout">
+                 <property name="horizontalSpacing">
+                  <number>0</number>
+                 </property>
+                 <property name="verticalSpacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
                  <item row="0" column="0" colspan="2">
                   <widget class="QScrollArea" name="scrollArea">
                    <property name="widgetResizable">
@@ -430,11 +534,14 @@
                      <rect>
                       <x>0</x>
                       <y>0</y>
-                      <width>838</width>
-                      <height>153</height>
+                      <width>925</width>
+                      <height>109</height>
                      </rect>
                     </property>
                     <layout class="QGridLayout" name="gridLayout_11">
+                     <property name="leftMargin">
+                      <number>12</number>
+                     </property>
                      <item row="0" column="0">
                       <layout class="QGridLayout" name="gridLayout_tunnel_tabs"/>
                      </item>

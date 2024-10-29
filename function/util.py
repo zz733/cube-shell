@@ -1,4 +1,6 @@
 import json
+import os
+import shutil
 import socket
 
 from PySide6.QtGui import QIcon
@@ -260,3 +262,47 @@ def write_json(file_path, data):
     """
     with open(file_path, 'w', encoding='utf-8') as file:
         json.dump(data, file, indent=4)
+
+
+# 速度格式化
+def format_speed(speed):
+    if speed >= 1024 * 1024:
+        return f"{speed / (1024 * 1024):.2f} MB/s"
+    elif speed >= 1024:
+        return f"{speed / 1024:.2f} KB/s"
+    else:
+        return f"{speed:.0f} B/s"
+
+
+# 拷贝文件到指定目录
+def copy_file(src_path, dest_path):
+    try:
+        # 复制文件
+        shutil.copy2(src_path, dest_path)
+        print(f"File copied from {src_path} to {dest_path}")
+    except FileNotFoundError:
+        print(f"Source file not found: {src_path}")
+    except PermissionError:
+        print(f"Permission denied while copying to {dest_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+def copy_config_to_conf(source_path: str, target_dir: str) -> None:
+    try:
+        # 确定目标文件的完整路径
+        target_path = os.path.join(target_dir, os.path.basename(source_path))
+
+        # 如果目标文件存在，则删除它
+        if os.path.exists(target_path):
+            os.remove(target_path)
+
+        # 复制文件
+        shutil.copy2(source_path, target_path)
+        print(f"File copied from {source_path} to {target_path}")
+    except FileNotFoundError:
+        print(f"Source file not found: {source_path}")
+    except PermissionError:
+        print(f"Permission denied while copying to {target_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")

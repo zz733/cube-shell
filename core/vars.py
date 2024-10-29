@@ -14,10 +14,10 @@ class KEYS:
 
 
 class ICONS:
-    TUNNEL = "icons/tunnel-diode.png"
-    START = "icons/open.png"
-    STOP = "icons/off.png"
-    KILL_SSH = "icons/on-off.png"
+    TUNNEL = ":tunnel-diode.png"
+    START = ":open.png"
+    STOP = ":off.png"
+    KILL_SSH = ":on-off.png"
 
 
 class CMDS:

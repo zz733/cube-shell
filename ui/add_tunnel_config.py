@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (QComboBox, QGridLayout,
                                QSizePolicy, QSpacerItem, QDialogButtonBox)
 
 from style.style import PrimaryButtonStyle
+import icons.icons
 
 
 class Ui_AddTunnelConfig(object):
@@ -40,7 +41,7 @@ class Ui_AddTunnelConfig(object):
         self.comboBox_ssh = QComboBox(TunnelConfig)
         self.comboBox_ssh.setObjectName(u"comboBox_ssh")
         icon_ssh = QIcon()
-        icon_ssh.addFile(u"icons/icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
+        icon_ssh.addFile(u":icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
         with open('conf/config.dat', 'rb') as c:
             dic = pickle.loads(c.read())
             c.close()
@@ -81,13 +82,13 @@ class Ui_AddTunnelConfig(object):
 
         self.comboBox_tunnel_type = QComboBox(TunnelConfig)
         icon = QIcon()
-        icon.addFile(u"icons/Localhost.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
+        icon.addFile(u":Localhost.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
         self.comboBox_tunnel_type.addItem(icon, "")
         icon1 = QIcon()
-        icon1.addFile(u"icons/remote.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
+        icon1.addFile(u":remote.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
         self.comboBox_tunnel_type.addItem(icon1, "")
         icon2 = QIcon()
-        icon2.addFile(u"icons/dynamic.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
+        icon2.addFile(u":dynamic.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
         self.comboBox_tunnel_type.addItem(icon2, "")
         self.comboBox_tunnel_type.setObjectName(u"comboBox_tunnel_type")
 
