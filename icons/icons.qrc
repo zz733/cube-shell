@@ -61,5 +61,7 @@
     <file>stop.png</file>
     <file>tunnel-diode.png</file>
     <file>Upload.png</file>
+    <file>export.png</file>
+    <file>import.png</file>
 </qresource>
 </RCC>

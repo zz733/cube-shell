@@ -13,7 +13,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import PySide6
 import qdarktheme
-from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import QTimer, Signal, Qt, QPoint, QRect, QEvent, QObject, Slot, QUrl, QCoreApplication, \
     QTranslator, QSize
 from PySide6.QtGui import QIcon, QAction, QTextCursor, QCursor, QCloseEvent, QKeyEvent, QInputMethodEvent, QPixmap, \
@@ -69,6 +68,16 @@ keymap = {
 }
 
 
+def abspath(path):
+    """
+    获取当前脚本的绝对路径
+    :param path:
+    :return:
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_dir, 'conf', path)
+
+
 # 主界面逻辑
 class MainDialog(QMainWindow):
     initSftpSignal = Signal()
@@ -86,10 +95,10 @@ class MainDialog(QMainWindow):
         self.ui.ShellTab.tabBar().setTabIcon(0, icon)
 
         self.setDarkTheme()  # 默认设置为暗主题
+        self.index_pwd()
 
-        file_path = 'conf/theme.json'
         # 读取 JSON 文件内容
-        util.THEME = util.read_json(file_path)
+        util.THEME = util.read_json(abspath('theme.json'))
 
         # 隧道管理
         self.data = None
@@ -268,6 +277,8 @@ class MainDialog(QMainWindow):
             self.ui.label_11.setText("帮助 Shift+Ctrl+H")
             self.ui.label_12.setText("关于 Shift+Ctrl+B")
             self.ui.label_13.setText("查找命令行 Shift+Ctrl+C")
+            self.ui.label_14.setText("导入配置 Shift+Ctrl+I")
+            self.ui.label_15.setText("导出配置 Shift+Ctrl+E")
 
     # 进程列表初始化
     def processInitUI(self):
@@ -461,7 +472,7 @@ class MainDialog(QMainWindow):
 
     # 隧道刷新
     def tunnel_refresh(self):
-        self.data = util.read_json(CONF_FILE)
+        self.data = util.read_json(abspath(CONF_FILE))
         self.tunnels = []
 
         # 展示ssh隧道列表
@@ -499,6 +510,18 @@ class MainDialog(QMainWindow):
         new_ssh_tunnel_action.setStatusTip("新增SSH隧道")
         file_menu.addAction(new_ssh_tunnel_action)
         new_ssh_tunnel_action.triggered.connect(self.showAddSshTunnel)
+
+        export_configuration = QAction(QIcon(':export.png'), "&导出设备配置", self)
+        export_configuration.setShortcut("Shift+Ctrl+E")
+        export_configuration.setStatusTip("导出设备配置")
+        file_menu.addAction(export_configuration)
+        export_configuration.triggered.connect(self.export_configuration)
+
+        import_configuration = QAction(QIcon(':import.png'), "&导入设备配置", self)
+        import_configuration.setShortcut("Shift+Ctrl+I")
+        import_configuration.setStatusTip("导入设备配置")
+        file_menu.addAction(import_configuration)
+        import_configuration.triggered.connect(self.import_configuration)
 
         # 创建“主题设置”动作
         theme_action = QAction(QIcon(":undo.png"), "&主题设置", self)
@@ -544,6 +567,9 @@ class MainDialog(QMainWindow):
     # linux 常用命令
     def linux(self):
         self.tree_search_app = TreeSearchApp()
+
+        # 读取 JSON 数据并填充模型
+        self.tree_search_app.load_data_from_json(abspath('linux_commands.json'))
         self.tree_search_app.show()
 
     # 帮助
@@ -673,7 +699,8 @@ class MainDialog(QMainWindow):
         focus = self.ui.treeWidget.currentIndex().row()
         if focus != -1:
             name = self.ui.treeWidget.topLevelItem(focus).text(0)
-            with open('conf/config.dat', 'rb') as c:
+
+            with open(abspath('config.dat'), 'rb') as c:
                 conf = pickle.loads(c.read())[name]
                 c.close()
 
@@ -745,7 +772,7 @@ class MainDialog(QMainWindow):
         self.refreshDirs()
 
         # 读取json文件
-        items = util.read_json_file("conf/docker.json")
+        items = util.read_json_file(abspath('docker.json'))
         # 每行最多四个小块
         max_columns = 6
         # 遍历列表，创建小块并添加到网格布局中
@@ -972,10 +999,11 @@ class MainDialog(QMainWindow):
         changed = DeepDiff(self.data, data, ignore_order=True)
         if changed:
             timestamp = int(time.time())
-            shutil.copy(CONF_FILE, F"{CONF_FILE}-{timestamp}")
-            with open(CONF_FILE, "w") as fp:
+            tunnel_json_path = abspath(CONF_FILE)
+            shutil.copy(tunnel_json_path, F"{tunnel_json_path}-{timestamp}")
+            with open(tunnel_json_path, "w") as fp:
                 json.dump(data, fp)
-            backup_configs = glob.glob(F"{CONF_FILE}-*")
+            backup_configs = glob.glob(F"{tunnel_json_path}-*")
             if len(backup_configs) > 10:
                 for config in sorted(backup_configs, reverse=True)[10:]:
                     os.remove(config)
@@ -1117,7 +1145,7 @@ class MainDialog(QMainWindow):
             for item in selected_items:
                 # 获取项的内容
                 name = item.text(0)
-                with open('conf/config.dat', 'rb') as c:
+                with open(abspath('config.dat'), 'rb') as c:
                     conf = pickle.loads(c.read())[name]
 
                 if len(conf) == 3:
@@ -1143,14 +1171,50 @@ class MainDialog(QMainWindow):
         self.add.setModal(True)
         self.add.show()
 
+    # 导出配置
+    def export_configuration(self):
+        src_path = abspath('config.dat')
+        # 选择保存文件夹
+        directory = QFileDialog.getExistingDirectory(
+            None,  # 父窗口，这里为None表示没有父窗口
+            '选择保存文件夹',  # 对话框标题
+            '',  # 默认打开目录
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks  # 显示选项
+        )
+        if directory:
+            os.makedirs(f'{directory}/config', exist_ok=True)
+            # 复制文件
+            shutil.copy2(str(src_path), f'{directory}/config/config.dat')
+            self.success("导出成功")
+
+    # 导入配置
+    def import_configuration(self):
+        config = abspath('config.dat')
+
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择文件",
+            "",
+            "所有文件 (*);;json 文件 (*.json)",
+        )
+        if file_name:
+            # 如果目标文件存在，则删除它
+            if os.path.exists(config):
+                os.remove(config)
+            # 复制文件
+            shutil.copy2(str(file_name), str(config))
+
+        self.refreshConf()
+
     # 刷新设备列表
     def refreshConf(self):
-        if not os.path.exists('conf/config.dat'):
-            with open('conf/config.dat', 'wb') as c:
+        config = abspath('config.dat')
+        if not os.path.exists(config):
+            with open(config, 'wb') as c:
                 start_dic = {}
                 c.write(pickle.dumps(start_dic))
                 c.close()
-        with open('conf/config.dat', 'rb') as c:
+        with open(config, 'rb') as c:
             dic = pickle.loads(c.read())
             c.close()
         i = 0
@@ -1337,9 +1401,10 @@ class MainDialog(QMainWindow):
                 for item in selected_items:
                     # 获取项的内容
                     name = item.text(0)
-                    with open('conf/config.dat', 'rb') as c:
+                    config = abspath('config.dat')
+                    with open(config, 'rb') as c:
                         conf = pickle.loads(c.read())
-                    with open('conf/config.dat', 'wb') as c:
+                    with open(config, 'wb') as c:
                         del conf[name]
                         c.write(pickle.dumps(conf))
                 self.refreshConf()
@@ -1712,10 +1777,11 @@ class AddConfigUi(QDialog):
         elif ip == '':
             self.alarm('ip地址不能为空！')
         else:
-            with open('conf/config.dat', 'rb') as c:
+            config = abspath('config.dat')
+            with open(config, 'rb') as c:
                 conf = pickle.loads(c.read())
                 c.close()
-            with open('conf/config.dat', 'wb') as c:
+            with open(config, 'wb') as c:
                 conf[name] = [username, password, f"{ip}:{prot}", private_key_type, private_key_file]
                 c.write(pickle.dumps(conf))
                 c.close()
@@ -2018,6 +2084,14 @@ class TunnelConfig(QDialog):
         self.ui = Ui_TunnelConfig()
         self.ui.setupUi(self)
 
+        icon_ssh = QIcon()
+        icon_ssh.addFile(u":icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
+        with open(abspath('config.dat'), 'rb') as c:
+            dic = pickle.loads(c.read())
+            c.close()
+        for k in dic.keys():
+            self.ui.comboBox_ssh.addItem(icon_ssh, k)
+
         tunnel_type = data.get(KEYS.TUNNEL_TYPE)
         self.ui.comboBox_tunnel_type.setCurrentText(tunnel_type)
         self.ui.comboBox_ssh.setCurrentText(data.get(KEYS.DEVICE_NAME))
@@ -2080,6 +2154,15 @@ class AddTunnelConfig(QDialog):
 
         self.tunnel = Ui_AddTunnelConfig()
         self.tunnel.setupUi(self)
+
+        icon_ssh = QIcon()
+        icon_ssh.addFile(u":icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
+        with open(abspath('config.dat'), 'rb') as c:
+            dic = pickle.loads(c.read())
+            c.close()
+        for k in dic.keys():
+            self.tunnel.comboBox_ssh.addItem(icon_ssh, k)
+
         self.tunnel.add_tunnel.accepted.connect(self.addTunnel)
         self.tunnel.add_tunnel.rejected.connect(TunnelConfig.reject)
         self.tunnel.comboBox_tunnel_type.currentIndexChanged.connect(self.readonly_remote_bind_address_edit)
@@ -2116,7 +2199,7 @@ class AddTunnelConfig(QDialog):
             KEYS.LOCAL_BIND_ADDRESS: self.tunnel.local_bind_address_edit.text(),
         }
 
-        file_path = 'conf/tunnel.json'
+        file_path = abspath('tunnel.json')
         # 读取 JSON 文件内容
         data = util.read_json(file_path)
         data[self.tunnel.ssh_tunnel_name.text()] = dic
@@ -2272,7 +2355,7 @@ class Tunnel(QWidget):
 
         if reply.clickedButton() == yes_button:
             name_text = self.ui.name.text()
-            file_path = 'conf/tunnel.json'
+            file_path = abspath('tunnel.json')
             # 读取 JSON 文件内容
             data = util.read_json(file_path)
             del data[name_text]
@@ -2287,7 +2370,7 @@ class Tunnel(QWidget):
 
 
 def open_data(ssh):
-    with open('conf/config.dat', 'rb') as c:
+    with open(abspath('config.dat'), 'rb') as c:
         conf = pickle.loads(c.read())[ssh]
     username, password, host, key_type, key_file = '', '', '', '', ''
     if len(conf) == 3:

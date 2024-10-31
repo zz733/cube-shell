@@ -7,9 +7,9 @@ name = "pypi"
 pyside6 = "*"
 paramiko = "*"
 pygments = "*"
-qdarkstyle = "*"
 py2app = "*"
 pywin32-ctypes = "*"
+pyqtdarktheme = "*"
 
 [dev-packages]
 

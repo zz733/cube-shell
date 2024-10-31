@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import pickle
 
 from PySide6.QtCore import (QCoreApplication, QMetaObject, QSize, Qt)
@@ -39,14 +40,6 @@ class Ui_TunnelConfig(object):
 
         self.comboBox_ssh = QComboBox(TunnelConfig)
         self.comboBox_ssh.setObjectName(u"comboBox_ssh")
-
-        icon_ssh = QIcon()
-        icon_ssh.addFile(u":icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
-        with open('conf/config.dat', 'rb') as c:
-            dic = pickle.loads(c.read())
-            c.close()
-        for k in dic.keys():
-            self.comboBox_ssh.addItem(icon_ssh, k)
 
         self.gridLayout.addWidget(self.comboBox_ssh, 1, 1, 1, 2)
 

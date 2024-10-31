@@ -32,9 +32,6 @@ class TreeSearchApp(QMainWindow):
         self.model = QStandardItemModel()
         self.model.setHorizontalHeaderLabels(['命令', '选项', '描述'])
 
-        # 读取 JSON 数据并填充模型
-        self.load_data_from_json('conf/linux_commands.json')
-
         # 创建代理模型用于过滤
         self.proxy_model = TreeFilterProxyModel(self)
         self.proxy_model.setSourceModel(self.model)

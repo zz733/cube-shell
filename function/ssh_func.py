@@ -88,7 +88,7 @@ class SshClient(BaseBackend):
         """
         try:
             if self.channel.recv_ready():
-                output = self.channel.recv(1024)
+                output = self.channel.recv(4096)
                 self.write_to_screen(output)
         except Exception as e:
             print(f"Error while reading from channel: {e}")

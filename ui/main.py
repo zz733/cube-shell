@@ -271,15 +271,15 @@ class Ui_MainWindow(object):
 
         self.gridLayout_2.addWidget(self.label_12, 4, 0, 1, 1)
 
-        # self.label_15 = QLabel(self.widget)
-        # self.label_15.setObjectName(u"label_15")
-        #
-        # self.gridLayout_2.addWidget(self.label_15, 8, 0, 1, 1)
+        self.label_15 = QLabel(self.widget)
+        self.label_15.setObjectName(u"label_15")
 
-        # self.label_14 = QLabel(self.widget)
-        # self.label_14.setObjectName(u"label_14")
-        #
-        # self.gridLayout_2.addWidget(self.label_14, 7, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.label_15, 8, 0, 1, 1)
+
+        self.label_14 = QLabel(self.widget)
+        self.label_14.setObjectName(u"label_14")
+
+        self.gridLayout_2.addWidget(self.label_14, 7, 0, 1, 1)
 
         self.label_9 = QLabel(self.widget)
         self.label_9.setObjectName(u"label_9")
@@ -449,10 +449,10 @@ class Ui_MainWindow(object):
         self.label_7.setText(
             QCoreApplication.translate("MainWindow", u"\u6dfb\u52a0\u914d\u7f6e Shift+Command+A", None))
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"\u5173\u4e8e Shift+Command+B", None))
-        # self.label_15.setText(
-        #     QCoreApplication.translate("MainWindow", u"\u5bfc\u51fa\u914d\u7f6e Shift+Command+E", None))
-        # self.label_14.setText(
-        #     QCoreApplication.translate("MainWindow", u"\u5bfc\u5165\u914d\u7f6e Shift+Command+I", None))
+        self.label_15.setText(
+            QCoreApplication.translate("MainWindow", u"\u5bfc\u51fa\u914d\u7f6e Shift+Command+E", None))
+        self.label_14.setText(
+            QCoreApplication.translate("MainWindow", u"\u5bfc\u5165\u914d\u7f6e Shift+Command+I", None))
         self.label_9.setText(
             QCoreApplication.translate("MainWindow", u"\u6dfb\u52a0\u96a7\u9053 Shift+Command+S", None))
         self.ShellTab.setTabText(self.ShellTab.indexOf(self.index),

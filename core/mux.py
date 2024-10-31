@@ -70,7 +70,7 @@ class Multiplexer(object):
             read_wait_list = [a.get_read_wait() for a in self.backend_index.values()]
             if read_wait_list:
                 try:
-                    read_ready_list, write_ready_list, error_ready_list = select.select(read_wait_list, [], [], 1)
+                    read_ready_list, write_ready_list, error_ready_list = select.select(read_wait_list, [], [], 0.1)
                 except Exception as e:
                     print(f"Select error: {e}")
                     read_ready_list = []

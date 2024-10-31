@@ -1,4 +1,4 @@
-CONF_FILE = "conf/tunnel.json"
+CONF_FILE = "tunnel.json"
 
 
 class KEYS:
