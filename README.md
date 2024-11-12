@@ -131,4 +131,5 @@ python setup.py py2app --strip --optimize=2
 [cube-shell-video](https://mp.weixin.qq.com/s/ntDuDipnCqN4v2Y4Urzo6w)
 
 #### 有任何不懂的可以加交流群
-![cube-shell-weixin.png](docs/images/weixin.png)
+![qq.png.png](docs/images/qq.png)
+![weixin.png.png](docs/images/weixin.png)
