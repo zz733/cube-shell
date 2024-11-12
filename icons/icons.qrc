@@ -63,5 +63,7 @@
     <file>Upload.png</file>
     <file>export.png</file>
     <file>import.png</file>
+    <file>global_proxy_off.png</file>
+    <file>global_proxy_on.png</file>
 </qresource>
 </RCC>

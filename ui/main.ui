@@ -445,7 +445,7 @@
              <item>
               <widget class="QTabWidget" name="tabWidget">
                <property name="currentIndex">
-                <number>2</number>
+                <number>3</number>
                </property>
                <widget class="QWidget" name="tab_docker_manager">
                 <attribute name="title">
@@ -535,7 +535,7 @@
                       <x>0</x>
                       <y>0</y>
                       <width>925</width>
-                      <height>109</height>
+                      <height>133</height>
                      </rect>
                     </property>
                     <layout class="QGridLayout" name="gridLayout_11">
@@ -551,6 +551,109 @@
                  </item>
                  <item row="1" column="0" colspan="2">
                   <layout class="QGridLayout" name="gridLayout_kill_all"/>
+                 </item>
+                </layout>
+               </widget>
+               <widget class="QWidget" name="NAT_traversal">
+                <attribute name="title">
+                 <string>内网穿透</string>
+                </attribute>
+                <layout class="QVBoxLayout" name="verticalLayout_4">
+                 <item>
+                  <layout class="QGridLayout" name="gridLayout_10">
+                   <item row="1" column="2">
+                    <widget class="QLabel" name="label_17">
+                     <property name="text">
+                      <string>服务端代理端口</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="3">
+                    <widget class="QLineEdit" name="lineEdit_3">
+                     <property name="text">
+                      <string>80</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="2">
+                    <widget class="QLabel" name="label_19">
+                     <property name="text">
+                      <string>客户端代理端口</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="comboBox">
+                     <item>
+                      <property name="text">
+                       <string>AMD</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>ARM</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QComboBox" name="comboBox_3">
+                     <item>
+                      <property name="text">
+                       <string>TCP</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>HTTP</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>UDP</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_16">
+                     <property name="text">
+                      <string>服务端</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="3">
+                    <widget class="QLineEdit" name="lineEdit_2">
+                     <property name="text">
+                      <string>8080</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_18">
+                     <property name="text">
+                      <string>代理类型</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_20">
+                     <property name="text">
+                      <string>双向认证密钥</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QLineEdit" name="lineEdit"/>
+                   </item>
+                   <item row="3" column="3">
+                    <widget class="QPushButton" name="pushButton">
+                     <property name="text">
+                      <string>开启</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
                 </layout>
                </widget>

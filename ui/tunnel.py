@@ -33,6 +33,7 @@ class Ui_Tunnel(object):
         self.horizontalLayout.addWidget(self.name)
 
         self.action_tunnel = QPushButton(Tunnel)
+        self.action_tunnel.setToolTip("启动/关闭隧道")
         self.action_tunnel.setObjectName(u"action_tunnel")
         self.action_tunnel.setMaximumSize(QSize(32, 16777215))
         self.action_tunnel.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -41,10 +42,24 @@ class Ui_Tunnel(object):
         self.action_tunnel.setIcon(icon1)
         self.action_tunnel.setIconSize(QSize(20, 20))
         self.action_tunnel.setFlat(True)
-
         self.horizontalLayout.addWidget(self.action_tunnel)
 
+
+        self.global_proxy = QPushButton(Tunnel)
+        self.global_proxy.setToolTip("开启全局代理")
+        self.global_proxy.setObjectName(u"action_tunnel")
+        self.global_proxy.setMaximumSize(QSize(32, 16777215))
+        self.global_proxy.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        icon1 = QIcon()
+        icon1.addFile(u":global_proxy_off.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.global_proxy.setIcon(icon1)
+        self.global_proxy.setIconSize(QSize(20, 20))
+        self.global_proxy.setFlat(True)
+        self.global_proxy.setVisible(False)
+        self.horizontalLayout.addWidget(self.global_proxy)
+
         self.action_open = QPushButton(Tunnel)
+        self.action_open.setToolTip("打开浏览器")
         self.action_open.setObjectName(u"action_open")
         self.action_open.setMaximumSize(QSize(32, 16777215))
         self.action_open.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -53,10 +68,10 @@ class Ui_Tunnel(object):
         self.action_open.setIcon(icon2)
         self.action_open.setIconSize(QSize(20, 20))
         self.action_open.setFlat(True)
-
         self.horizontalLayout.addWidget(self.action_open)
 
         self.action_settings = QPushButton(Tunnel)
+        self.action_settings.setToolTip("编辑隧道配置")
         self.action_settings.setObjectName(u"action_settings")
         self.action_settings.setMaximumSize(QSize(32, 16777215))
         self.action_settings.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -65,10 +80,10 @@ class Ui_Tunnel(object):
         self.action_settings.setIcon(icon3)
         self.action_settings.setIconSize(QSize(20, 20))
         self.action_settings.setFlat(True)
-
         self.horizontalLayout.addWidget(self.action_settings)
 
         self.delete_ssh = QPushButton(Tunnel)
+        self.delete_ssh.setToolTip("删除隧道")
         self.delete_ssh.setObjectName(u"delete_ssh")
         self.delete_ssh.setMaximumSize(QSize(32, 16777215))
         self.delete_ssh.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -77,7 +92,6 @@ class Ui_Tunnel(object):
         self.delete_ssh.setIcon(icon4)
         self.delete_ssh.setIconSize(QSize(20, 20))
         self.delete_ssh.setFlat(True)
-
         self.horizontalLayout.addWidget(self.delete_ssh)
 
         self.retranslateUi(Tunnel)

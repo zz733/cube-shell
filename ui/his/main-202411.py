@@ -3,11 +3,10 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect,
                             QSize, Qt)
 from PySide6.QtGui import (QCursor, QFont)
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGridLayout,
-                               QHBoxLayout, QLabel, QLineEdit,
-                               QProgressBar, QPushButton, QScrollArea,
-                               QSizePolicy, QSplitter, QTabWidget, QTableWidget,
-                               QTextBrowser, QTreeWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QFormLayout, QGridLayout, QHBoxLayout,
+                               QLabel, QLineEdit, QProgressBar, QPushButton, QScrollArea, QSizePolicy,
+                               QSplitter, QTabWidget, QTableWidget, QTextBrowser, QTreeWidget, QVBoxLayout,
+                               QWidget)
 
 from style.style import DangerButtonStyle, PrimaryButtonStyle
 
@@ -247,6 +246,7 @@ class Ui_MainWindow(object):
 
         self.widget = QWidget(self.index)
         self.widget.setObjectName(u"widget")
+        # self.widget.setMinimumSize(QSize(0, 517))
         self.gridLayout_2 = QGridLayout(self.widget)
         self.gridLayout_2.setSpacing(0)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
@@ -386,75 +386,6 @@ class Ui_MainWindow(object):
 
         self.tabWidget.addTab(self.tab_ssh_manager, "")
 
-        self.NAT_traversal = QWidget()
-        self.NAT_traversal.setObjectName(u"NAT_traversal")
-        self.verticalLayout_4 = QVBoxLayout(self.NAT_traversal)
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.gridLayout_10 = QGridLayout()
-        self.gridLayout_10.setObjectName(u"gridLayout_10")
-        self.label_17 = QLabel(self.NAT_traversal)
-        self.label_17.setObjectName(u"label_17")
-
-        self.gridLayout_10.addWidget(self.label_17, 1, 2, 1, 1)
-
-        self.lineEdit_3 = QLineEdit(self.NAT_traversal)
-        self.lineEdit_3.setObjectName(u"lineEdit_3")
-
-        self.gridLayout_10.addWidget(self.lineEdit_3, 1, 3, 1, 1)
-
-        self.label_19 = QLabel(self.NAT_traversal)
-        self.label_19.setObjectName(u"label_19")
-
-        self.gridLayout_10.addWidget(self.label_19, 2, 2, 1, 1)
-
-        self.comboBox = QComboBox(self.NAT_traversal)
-        self.comboBox.setObjectName(u"comboBox")
-
-        self.gridLayout_10.addWidget(self.comboBox, 1, 1, 1, 1)
-
-        self.comboBox_3 = QComboBox(self.NAT_traversal)
-        self.comboBox_3.addItem("")
-        self.comboBox_3.addItem("")
-        self.comboBox_3.addItem("")
-        self.comboBox_3.setObjectName(u"comboBox_3")
-
-        self.gridLayout_10.addWidget(self.comboBox_3, 2, 1, 1, 1)
-
-        self.label_16 = QLabel(self.NAT_traversal)
-        self.label_16.setObjectName(u"label_16")
-
-        self.gridLayout_10.addWidget(self.label_16, 1, 0, 1, 1)
-
-        self.lineEdit_2 = QLineEdit(self.NAT_traversal)
-        self.lineEdit_2.setObjectName(u"lineEdit_2")
-
-        self.gridLayout_10.addWidget(self.lineEdit_2, 2, 3, 1, 1)
-
-        self.label_18 = QLabel(self.NAT_traversal)
-        self.label_18.setObjectName(u"label_18")
-
-        self.gridLayout_10.addWidget(self.label_18, 2, 0, 1, 1)
-
-        self.label_20 = QLabel(self.NAT_traversal)
-        self.label_20.setObjectName(u"label_20")
-
-        self.gridLayout_10.addWidget(self.label_20, 3, 0, 1, 1)
-
-        self.lineEdit = QLineEdit(self.NAT_traversal)
-        self.lineEdit.setObjectName(u"lineEdit")
-        self.lineEdit.setEchoMode(QLineEdit.EchoMode.Password)
-
-        self.gridLayout_10.addWidget(self.lineEdit, 3, 1, 1, 1)
-
-        self.pushButton = QPushButton(self.NAT_traversal)
-        self.pushButton.setObjectName(u"pushButton")
-
-        self.gridLayout_10.addWidget(self.pushButton, 3, 3, 1, 1)
-
-        self.verticalLayout_4.addLayout(self.gridLayout_10)
-
-        self.tabWidget.addTab(self.NAT_traversal, "")
-
         self.verticalLayout_2.addWidget(self.tabWidget)
 
         self.splitter.addWidget(self.verticalLayoutWidget_2)
@@ -511,9 +442,8 @@ class Ui_MainWindow(object):
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"\u5185\u6838\u7248\u672c", None))
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"\u7f51\u7edc\u4e0a\u884c", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"CPU\u76d1\u63a7", None))
-        self.kernel.setText(QCoreApplication.translate("MainWindow", u"Linux", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"\u5185\u6838", None))
-        self.label_11.setText(QCoreApplication.translate("MainWindow", u"\u5e2e\u52a9 Shift+Command+P", None))
+        self.label_8.setText(QCoreApplication.translate("MainWindow", u"固件版本", None))
+        self.label_11.setText(QCoreApplication.translate("MainWindow", u"\u5e2e\u52a9 Shift+Command+H", None))
         self.label_13.setText(
             QCoreApplication.translate("MainWindow", u"\u67e5\u627e\u547d\u4ee4\u884c Shift+Command+C", None))
         self.label_7.setText(
@@ -535,20 +465,4 @@ class Ui_MainWindow(object):
                                   QCoreApplication.translate("MainWindow", u"\u5e38\u7528\u5bb9\u5668", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_ssh_manager),
                                   QCoreApplication.translate("MainWindow", u"SSH\u96a7\u9053", None))
-        self.label_17.setText(
-            QCoreApplication.translate("MainWindow", u"\u670d\u52a1\u7aef\u4ee3\u7406\u7aef\u53e3", None))
-        self.lineEdit_3.setText(QCoreApplication.translate("MainWindow", u"80", None))
-        self.label_19.setText(
-            QCoreApplication.translate("MainWindow", u"\u5ba2\u6237\u7aef\u4ee3\u7406\u7aef\u53e3", None))
-        self.comboBox_3.setItemText(0, QCoreApplication.translate("MainWindow", u"TCP", None))
-        self.comboBox_3.setItemText(1, QCoreApplication.translate("MainWindow", u"HTTP", None))
-        self.comboBox_3.setItemText(2, QCoreApplication.translate("MainWindow", u"UDP", None))
-
-        self.label_16.setText(QCoreApplication.translate("MainWindow", u"\u670d\u52a1\u7aef", None))
-        self.lineEdit_2.setText(QCoreApplication.translate("MainWindow", u"8080", None))
-        self.label_18.setText(QCoreApplication.translate("MainWindow", u"\u4ee3\u7406\u7c7b\u578b", None))
-        self.label_20.setText(QCoreApplication.translate("MainWindow", u"\u53cc\u5411\u8ba4\u8bc1\u5bc6\u94a5", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\u5f00\u542f", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.NAT_traversal),
-                                  QCoreApplication.translate("MainWindow", u"\u5185\u7f51\u7a7f\u900f", None))
     # retranslateUi

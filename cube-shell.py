@@ -91,6 +91,7 @@ class MainDialog(QMainWindow):
         self.setAttribute(Qt.WA_InputMethodEnabled, True)
         self.setAttribute(Qt.WA_KeyCompression, True)
         self.setFocusPolicy(Qt.WheelFocus)
+        self.Shell = None
         icon = QIcon(":index.png")
         self.ui.ShellTab.tabBar().setTabIcon(0, icon)
 
@@ -104,6 +105,7 @@ class MainDialog(QMainWindow):
         self.data = None
         self.tunnels = []
         self.tunnel_refresh()
+        self.nat_traversal()
 
         # 进程管理
         self.search_text = ""
@@ -118,10 +120,6 @@ class MainDialog(QMainWindow):
         self.dir_tree_now = []
         self.file_name = ''
         self.fileEvent = ''
-
-        self.buffer = ""
-        self.prompt_pos = 0
-        self.prompt = ""
 
         self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
 
@@ -488,6 +486,17 @@ class MainDialog(QMainWindow):
             self.kill_button.clicked.connect(self.do_killall_ssh)
             self.ui.gridLayout_kill_all.addWidget(self.kill_button, i + 1, 0)
 
+    # NAT穿透
+    def nat_traversal(self):
+        icon_ssh = QIcon()
+        icon_ssh.addFile(u":icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
+        with open(abspath('config.dat'), 'rb') as c:
+            dic = pickle.loads(c.read())
+            c.close()
+        for k in dic.keys():
+            self.ui.comboBox.addItem(icon_ssh, k)
+
+
     def menuBarController(self):
         # 创建菜单栏
         menubar = self.menuBar()
@@ -500,24 +509,28 @@ class MainDialog(QMainWindow):
 
         # 创建“新建”动作
         new_action = QAction(QIcon(":icons8-ssh-48.png"), "&新增配置", self)
+        new_action.setIconVisibleInMenu(True)
         new_action.setShortcut("Shift+Ctrl+A")
         new_action.setStatusTip("添加配置")
         file_menu.addAction(new_action)
         new_action.triggered.connect(self.showAddConfig)
 
         new_ssh_tunnel_action = QAction(QIcon(ICONS.TUNNEL), "&新增SSH隧道", self)
+        new_ssh_tunnel_action.setIconVisibleInMenu(True)
         new_ssh_tunnel_action.setShortcut("Shift+Ctrl+S")
         new_ssh_tunnel_action.setStatusTip("新增SSH隧道")
         file_menu.addAction(new_ssh_tunnel_action)
         new_ssh_tunnel_action.triggered.connect(self.showAddSshTunnel)
 
         export_configuration = QAction(QIcon(':export.png'), "&导出设备配置", self)
+        export_configuration.setIconVisibleInMenu(True)
         export_configuration.setShortcut("Shift+Ctrl+E")
         export_configuration.setStatusTip("导出设备配置")
         file_menu.addAction(export_configuration)
         export_configuration.triggered.connect(self.export_configuration)
 
         import_configuration = QAction(QIcon(':import.png'), "&导入设备配置", self)
+        import_configuration.setIconVisibleInMenu(True)
         import_configuration.setShortcut("Shift+Ctrl+I")
         import_configuration.setStatusTip("导入设备配置")
         file_menu.addAction(import_configuration)
@@ -661,8 +674,11 @@ class MainDialog(QMainWindow):
 
         # 创建复制和粘贴的 QAction 对象
         copy_action = QAction(QIcon(":copy.png"), '复制', self)
+        copy_action.setIconVisibleInMenu(True)
         paste_action = QAction(QIcon(":paste.png"), '粘贴', self)
+        paste_action.setIconVisibleInMenu(True)
         clear_action = QAction(QIcon(":clear.png"), '清屏', self)
+        clear_action.setIconVisibleInMenu(True)
 
         # 绑定槽函数到 QAction 对象
         copy_action.triggered.connect(self.copy)
@@ -679,8 +695,11 @@ class MainDialog(QMainWindow):
 
     # 复制文本
     def copy(self):
+        current_index = self.ui.ShellTab.currentIndex()
+        this = self.ui.ShellTab.tabWhatsThis(current_index)
+        ssh_conn = mux.backend_index[this]
         # 获取当前选中的文本，并复制到剪贴板
-        selected_text = self.Shell.textCursor().selectedText()
+        selected_text = ssh_conn.Shell.textCursor().selectedText()
         clipboard = QApplication.clipboard()
         clipboard.setText(selected_text)
 
@@ -750,6 +769,7 @@ class MainDialog(QMainWindow):
         await loop.run_in_executor(executor, ssh_conn.connect)
 
         current_index = self.ui.ShellTab.currentIndex()
+        ssh_conn.Shell = self.Shell
         self.ui.ShellTab.setTabWhatsThis(current_index, ssh_conn.id)
 
         # 异步初始化 SFTP
@@ -1029,8 +1049,11 @@ class MainDialog(QMainWindow):
             """)
             # 创建菜单选项对象
             self.ui.action = QAction(QIcon(':addConfig.png'), '添加配置', self)
+            self.ui.action.setIconVisibleInMenu(True)
             self.ui.action1 = QAction(QIcon(':addConfig.png'), '编辑配置', self)
+            self.ui.action1.setIconVisibleInMenu(True)
             self.ui.action2 = QAction(QIcon(':delConf.png'), '删除配置', self)
+            self.ui.action2.setIconVisibleInMenu(True)
             # 把动作选项对象添加到菜单self.groupBox_menu上
             self.ui.tree_menu.addAction(self.ui.action)
             self.ui.tree_menu.addAction(self.ui.action1)
@@ -1065,13 +1088,19 @@ class MainDialog(QMainWindow):
             """)
 
             self.ui.action1 = QAction(QIcon(':Download.png'), '下载文件', self)
+            self.ui.action1.setIconVisibleInMenu(True)
             self.ui.action2 = QAction(QIcon(':Upload.png'), '上传文件', self)
+            self.ui.action2.setIconVisibleInMenu(True)
             self.ui.action3 = QAction(QIcon(':Edit.png'), '编辑文本', self)
+            self.ui.action3.setIconVisibleInMenu(True)
             self.ui.action4 = QAction(QIcon(':createdirector.png'), '创建文件夹', self)
+            self.ui.action4.setIconVisibleInMenu(True)
             self.ui.action5 = QAction(QIcon(':createfile.png'), '创建文件', self)
+            self.ui.action5.setIconVisibleInMenu(True)
             self.ui.action6 = QAction(QIcon(':refresh.png'), '刷新', self)
-
+            self.ui.action6.setIconVisibleInMenu(True)
             self.ui.action7 = QAction(QIcon(':remove.png'), '删除', self)
+            self.ui.action7.setIconVisibleInMenu(True)
             self.ui.tree_menu.addAction(self.ui.action1)
             self.ui.tree_menu.addAction(self.ui.action2)
             self.ui.tree_menu.addAction(self.ui.action3)
@@ -1108,8 +1137,11 @@ class MainDialog(QMainWindow):
                 }
             """)
             self.ui.action1 = QAction(QIcon(':stop.png'), '停止', self)
+            self.ui.action1.setIconVisibleInMenu(True)
             self.ui.action2 = QAction(QIcon(':restart.png'), '重启', self)
+            self.ui.action2.setIconVisibleInMenu(True)
             self.ui.action3 = QAction(QIcon(':remove.png'), '删除', self)
+            self.ui.action3.setIconVisibleInMenu(True)
             # self.ui.action4 = QAction('日志', self)
 
             self.ui.tree_menu.addAction(self.ui.action1)
