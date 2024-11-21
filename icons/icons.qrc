@@ -38,20 +38,26 @@
     <file>icons8-vuejs-48.png</file>
     <file>icons8-yaml-48.png</file>
     <file>icons8-zip-48.png</file>
+    <file>icons-unzip-48.png</file>
     <file>index.png</file>
     <file>kill.png</file>
     <file>Localhost.png</file>
     <file>logo.icns</file>
     <file>logo.ico</file>
     <file>minio.png</file>
+    <file>minio_256.png</file>
     <file>nacos-copy.png</file>
+    <file>nacos_256.png</file>
     <file>nginx.png</file>
+    <file>nginx_256.png</file>
     <file>off.png</file>
     <file>on-off.png</file>
     <file>open.png</file>
     <file>paste.png</file>
     <file>postgresql.png</file>
+    <file>postgresql_256.png</file>
     <file>Redis.png</file>
+    <file>redis_256.png</file>
     <file>refresh.png</file>
     <file>remote.png</file>
     <file>remove.png</file>
@@ -65,5 +71,10 @@
     <file>import.png</file>
     <file>global_proxy_off.png</file>
     <file>global_proxy_on.png</file>
+    <file>permissions-48.png</file>
+    <file>icons-log-48.png</file>
+    <file>icons-toml-48.png</file>
+    <file>icons-rename-48.png</file>
+    <file>docs-log.png</file>
 </qresource>
 </RCC>

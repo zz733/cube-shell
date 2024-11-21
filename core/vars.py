@@ -22,5 +22,5 @@ class ICONS:
 
 class CMDS:
     SSH = "ssh"
-    SSH_KILL_NIX = "killall ssh"
+    SSH_KILL_NIX = "pkill ssh"
     SSH_KILL_WIN = "taskkill /im ssh.exe /t /f"

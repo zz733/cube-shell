@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 
 from function import util
@@ -19,10 +19,9 @@ class AboutDialog(QWidget):
 
         # Logo
         logo_label = QLabel(self)
-        logo_pixmap = QPixmap("docs/images/docs-log.png")
-        # 调整图片大小
-        scaled_pixmap = logo_pixmap.scaled(260, 260, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        logo_label.setPixmap(scaled_pixmap)
+        icon = QIcon(':docs-log.png')  # 替换为你的图标路径
+        logo_pixmap = icon.pixmap(160, 160)  # 获取图标的 QPixmap
+        logo_label.setPixmap(logo_pixmap)
         logo_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(logo_label)
 

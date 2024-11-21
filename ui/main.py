@@ -2,7 +2,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect,
                             QSize, Qt)
-from PySide6.QtGui import (QCursor, QFont)
+from PySide6.QtGui import (QCursor, QFont, QIcon)
 from PySide6.QtWidgets import (QComboBox, QFormLayout, QGridLayout,
                                QHBoxLayout, QLabel, QLineEdit,
                                QProgressBar, QPushButton, QScrollArea,
@@ -448,6 +448,14 @@ class Ui_MainWindow(object):
 
         self.pushButton = QPushButton(self.NAT_traversal)
         self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setToolTip("启动/关闭")
+        self.pushButton.setMaximumSize(QSize(50, 16777215))
+        self.pushButton.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        icon1 = QIcon()
+        icon1.addFile(u":open.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.pushButton.setIcon(icon1)
+        self.pushButton.setIconSize(QSize(50, 20))
+        self.pushButton.setFlat(True)
 
         self.gridLayout_10.addWidget(self.pushButton, 3, 3, 1, 1)
 
@@ -528,7 +536,7 @@ class Ui_MainWindow(object):
         self.ShellTab.setTabText(self.ShellTab.indexOf(self.index),
                                  QCoreApplication.translate("MainWindow", u"\u9996\u9875", None))
         ___qtreewidgetitem1 = self.treeWidgetDocker.headerItem()
-        ___qtreewidgetitem1.setText(0, QCoreApplication.translate("MainWindow", u"\u8bbe\u5907\u5217\u8868", None));
+        ___qtreewidgetitem1.setText(0, QCoreApplication.translate("MainWindow", u"docker容器管理", None));
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_docker_manager),
                                   QCoreApplication.translate("MainWindow", u"\u5bb9\u5668\u7ba1\u7406", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_docker_soft),
@@ -548,7 +556,7 @@ class Ui_MainWindow(object):
         self.lineEdit_2.setText(QCoreApplication.translate("MainWindow", u"8080", None))
         self.label_18.setText(QCoreApplication.translate("MainWindow", u"\u4ee3\u7406\u7c7b\u578b", None))
         self.label_20.setText(QCoreApplication.translate("MainWindow", u"\u53cc\u5411\u8ba4\u8bc1\u5bc6\u94a5", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\u5f00\u542f", None))
+        # self.pushButton.setText(QCoreApplication.translate("MainWindow", u"\u5f00\u542f", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.NAT_traversal),
                                   QCoreApplication.translate("MainWindow", u"\u5185\u7f51\u7a7f\u900f", None))
     # retranslateUi

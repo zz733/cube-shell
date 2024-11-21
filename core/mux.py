@@ -78,7 +78,6 @@ class Multiplexer(object):
                 for read_item in read_ready_list:
                     backend = self.read_index.get(read_item)
                     if backend:
-                        print(f"Reading from backend {backend.id}")
                         backend.read()
             else:
                 time.sleep(1)

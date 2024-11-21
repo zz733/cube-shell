@@ -1,6 +1,6 @@
 [
   {
-    "icon": "icons/postgreSQL.png",
+    "icon": ":postgresql_256.png",
     "website": "https://www.postgresql.org/",
     "containerName": "postgres",
     "status": "running",
@@ -31,7 +31,7 @@
     "mounts": "local"
   },
   {
-    "icon": "icons/nacos-copy.png",
+    "icon": ":nacos_256.png",
     "website": "https://nacos.io/",
     "containerName": "nacos",
     "status": "running",
@@ -95,7 +95,7 @@
     "mounts": "local"
   },
   {
-    "icon": "icons/nginx.png",
+    "icon": ":nginx_256.png",
     "website": "https://nacos.io/",
     "containerName": "nginx",
     "status": "running",
@@ -138,7 +138,7 @@
     "mounts": "local"
   },
   {
-    "icon": "icons/minio.png",
+    "icon": ":minio_256.png",
     "website": "https://nacos.io/",
     "containerName": "minio",
     "status": "running",
@@ -188,7 +188,7 @@
     "mounts": "local"
   },
   {
-    "icon": "icons/Redis.png",
+    "icon": ":redis_256.png",
     "website": "https://nacos.io/",
     "containerName": "redis",
     "status": "running",

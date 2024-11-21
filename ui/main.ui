@@ -8,7 +8,7 @@
     <x>0</x>
     <y>0</y>
     <width>1522</width>
-    <height>727</height>
+    <height>751</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -445,7 +445,7 @@
              <item>
               <widget class="QTabWidget" name="tabWidget">
                <property name="currentIndex">
-                <number>3</number>
+                <number>0</number>
                </property>
                <widget class="QWidget" name="tab_docker_manager">
                 <attribute name="title">
@@ -470,7 +470,7 @@
                     <widget class="QTreeWidget" name="treeWidgetDocker">
                      <column>
                       <property name="text">
-                       <string>设备列表</string>
+                       <string>docker容器管理</string>
                       </property>
                      </column>
                     </widget>
@@ -534,8 +534,8 @@
                      <rect>
                       <x>0</x>
                       <y>0</y>
-                      <width>925</width>
-                      <height>133</height>
+                      <width>98</width>
+                      <height>28</height>
                      </rect>
                     </property>
                     <layout class="QGridLayout" name="gridLayout_11">

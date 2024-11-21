@@ -47,55 +47,59 @@ def get_default_file_icon(qt_str):
     icon_provider = QFileIconProvider()
 
     if qt_str.endswith(".sh"):
-        return QIcon('icons/icons8-ssh-48.png')
+        return QIcon(':icons8-ssh-48.png')
     elif qt_str.endswith(".py"):
-        return QIcon('icons/icons8-python-48.png')
+        return QIcon(':icons8-python-48.png')
     elif qt_str.endswith(".java"):
-        return QIcon('icons/icons8-java-48.png')
+        return QIcon(':icons8-java-48.png')
     elif qt_str.endswith(".go"):
-        return QIcon('icons/icons8-golang-48.png')
+        return QIcon(':icons8-golang-48.png')
     elif qt_str.endswith(".c"):
-        return QIcon('icons/icons8-c-48.png')
+        return QIcon(':icons8-c-48.png')
     elif qt_str.endswith(".cpp"):
-        return QIcon('icons/icons8-c-48.png')
+        return QIcon(':icons8-c-48.png')
     elif qt_str.endswith(".js"):
-        return QIcon('icons/icons8-js-48.png')
+        return QIcon(':icons8-js-48.png')
     elif qt_str.endswith(".vue"):
-        return QIcon('icons/icons8-vuejs-48.png')
+        return QIcon(':icons8-vuejs-48.png')
     elif qt_str.endswith(".html"):
-        return QIcon('icons/icons8-html-48.png')
+        return QIcon(':icons8-html-48.png')
     elif qt_str.endswith(".css"):
-        return QIcon('icons/icons8-css-48.png')
+        return QIcon(':icons8-css-48.png')
     elif qt_str.endswith(".exe"):
-        return QIcon('icons/icons8-exe-48.png')
+        return QIcon(':icons8-exe-48.png')
     elif qt_str.endswith(".jar"):
-        return QIcon('icons/icons8-jar-48.png')
+        return QIcon(':icons8-jar-48.png')
     elif qt_str.endswith(".so"):
-        return QIcon('icons/icons8-linux-48.png')
+        return QIcon(':icons8-linux-48.png')
     elif qt_str.endswith(('.tar', '.gz', '.zip', '.jar')):
-        return QIcon('icons/icons8-zip-48.png')
+        return QIcon(':icons8-zip-48.png')
     elif qt_str.endswith(('.cfg', '.gitconfig', '.conf')):
-        return QIcon('icons/icons8-settings-40.png')
+        return QIcon(':icons8-settings-40.png')
     elif qt_str.endswith('.png'):
-        return QIcon('icons/icons8-png-48.png')
+        return QIcon(':icons8-png-48.png')
     elif qt_str.endswith('.gif'):
-        return QIcon('icons/icons8-gif-48.png')
+        return QIcon(':icons8-gif-48.png')
     elif qt_str.endswith(('.jpg', '.jpeg')):
-        return QIcon('icons/icons8-jpg-48.png')
+        return QIcon(':icons8-jpg-48.png')
     elif qt_str.endswith('.license'):
-        return QIcon('icons/icons8-license-48.png')
+        return QIcon(':icons8-license-48.png')
     elif qt_str.endswith('.json'):
-        return QIcon('icons/icons8-json-48.png')
+        return QIcon(':icons8-json-48.png')
     elif qt_str.endswith('.txt'):
-        return QIcon('icons/icons8-txt-48.png')
+        return QIcon(':icons8-txt-48.png')
     elif qt_str.endswith('.gitignore'):
-        return QIcon('icons/icons8-gitignore-48.png')
+        return QIcon(':icons8-gitignore-48.png')
     elif qt_str.endswith('.md'):
-        return QIcon('icons/icons8-md-48.png')
+        return QIcon(':icons8-md-48.png')
     elif qt_str.endswith(('.yaml', '.yml')):
-        return QIcon('icons/icons8-yaml-48.png')
+        return QIcon(':icons8-yaml-48.png')
     elif qt_str.endswith('.properties'):
-        return QIcon('icons/icons8-properties-48.png')
+        return QIcon(':icons8-properties-48.png')
+    elif qt_str.endswith('.log'):
+        return QIcon(':icons-log-48.png')
+    elif qt_str.endswith('.toml'):
+        return QIcon(':icons-toml-48.png')
 
     return icon_provider.icon(QFileIconProvider.File)
 
@@ -306,3 +310,19 @@ def copy_config_to_conf(source_path: str, target_dir: str) -> None:
         print(f"Permission denied while copying to {target_path}")
     except Exception as e:
         print(f"An error occurred: {e}")
+
+
+# 符号权限转八进制权限
+def symbolic_to_octal(symbolic):
+    # 排除第一个字符，它通常是文件类型
+    user, group, others = symbolic[0:3], symbolic[3:6], symbolic[6:9]
+
+    def calc_permission(perm):
+        mapping = {'r': 4, 'w': 2, 'x': 1, '-': 0}
+        return sum(mapping[char] for char in perm)
+
+    return (
+            calc_permission(user) * 100 +
+            calc_permission(group) * 10 +
+            calc_permission(others)
+    )

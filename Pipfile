@@ -10,6 +10,7 @@ pygments = "*"
 py2app = "*"
 pywin32-ctypes = "*"
 pyqtdarktheme = "*"
+toml = "*"
 
 [dev-packages]
 
