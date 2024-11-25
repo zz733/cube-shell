@@ -249,15 +249,9 @@ class MainDialog(QMainWindow):
                 local_dir = os.path.join(current_dir, 'frp')
                 # 启动客户端
                 cmd_u = f"cd {local_dir} && nohup ./frpc -c {abspath('frpc.toml')} &> frpc.log &"
-                #cmd_w = f"cd {local_dir} start /B frpc.exe -c {abspath('frpc.toml')} > frpc.log 2>&1"
                 if platform.system() == 'Darwin' or platform.system() == 'Linux':
-                    print("你是疯了吗进这里")
                     os.system(cmd_u)
                 elif platform.system() == 'Windows':
-                    #os.system(cmd_w)
-                    print("frpc.exe 什么鬼东西")
-                    print("A", f"{local_dir}/frpc.exe")
-                    print("B", abspath('frpc.toml'))
                     subprocess.Popen(
                         [f"{local_dir}\\frpc.exe", "-c", abspath('frpc.toml')],
                         stdout=open("frpc.log", "a"),
@@ -268,25 +262,20 @@ class MainDialog(QMainWindow):
                 icon1 = QIcon()
                 icon1.addFile(u":off.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
                 self.ui.pushButton.setIcon(icon1)
-
                 self.NAT = True
-                print("self.NAT = True", self.NAT)
             else:
                 # 关闭服务和客户端
                 cmd = f"pkill -9 frps"
-                #cmd_windows = f"taskkill /f /im frpc.exe"
                 ssh_conn.conn.exec_command(timeout=1, command=cmd, get_pty=False)
                 if platform.system() == 'Darwin' or platform.system() == 'Linux':
                     os.system(cmd)
                 elif platform.system() == 'Windows':
-                    #os.system(cmd_windows)
                     subprocess.run(['taskkill', '/f', '/im', 'frpc.exe'], capture_output=True, text=True)
 
                 icon1 = QIcon()
                 icon1.addFile(u":open.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
                 self.ui.pushButton.setIcon(icon1)
                 self.NAT = False
-                print("self.NAT = False", self.NAT)
             self.NAT_lod()
             ssh_conn.close()
         except Exception as e:
