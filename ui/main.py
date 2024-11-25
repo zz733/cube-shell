@@ -37,6 +37,7 @@ class Ui_MainWindow(object):
         self.gridLayout = QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout.setVerticalSpacing(0)
 
         self.treeWidget = QTreeWidget(self.gridLayoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -50,9 +51,6 @@ class Ui_MainWindow(object):
         self.treeWidget.setObjectName(u"treeWidget")
 
         self.gridLayout.addWidget(self.treeWidget, 1, 0, 1, 1)
-
-        # 创建初始的 QLineEdit
-        self.line_edits = []  # 保存所有 QLineEdit 的列表
 
         self.splitter_3.addWidget(self.gridLayoutWidget)
         self.splitter_255 = QSplitter(self.splitter_3)
@@ -71,11 +69,13 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
         self.verticalLayout_3.setContentsMargins(0, -1, -1, -1)
         self.search_box = QLineEdit(self.gridLayoutWidget_2)
+        self.search_box.setFocusPolicy(Qt.ClickFocus)
         self.search_box.setObjectName(u"search_box")
 
         self.verticalLayout_3.addWidget(self.search_box)
 
         self.result = QTableWidget(self.gridLayoutWidget_2)
+        self.result.setFocusPolicy(Qt.ClickFocus)
         # 去掉最左边的序号列
         self.result.verticalHeader().setVisible(False)
         self.result.setObjectName(u"result")
@@ -117,6 +117,7 @@ class Ui_MainWindow(object):
         self.gridLayout_8.setObjectName(u"gridLayout_8")
         self.gridLayout_8.setContentsMargins(3, -1, 3, -1)
         self.operatingSystem = QLineEdit(self.gridLayoutWidget_2)
+        self.operatingSystem.setFocusPolicy(Qt.ClickFocus)
         self.operatingSystem.setObjectName(u"operatingSystem")
         self.operatingSystem.setReadOnly(True)
 
@@ -140,6 +141,7 @@ class Ui_MainWindow(object):
         self.gridLayout_8.addWidget(self.label_2, 1, 0, 1, 1)
 
         self.kernelVersion = QLineEdit(self.gridLayoutWidget_2)
+        self.kernelVersion.setFocusPolicy(Qt.ClickFocus)
         self.kernelVersion.setObjectName(u"kernelVersion")
         self.kernelVersion.setReadOnly(True)
 
@@ -185,6 +187,7 @@ class Ui_MainWindow(object):
         self.gridLayout_8.addWidget(self.label, 0, 0, 1, 1)
 
         self.kernel = QLineEdit(self.gridLayoutWidget_2)
+        self.kernel.setFocusPolicy(Qt.ClickFocus)
         self.kernel.setObjectName(u"kernel")
         self.kernel.setReadOnly(True)
 
@@ -196,12 +199,14 @@ class Ui_MainWindow(object):
         self.gridLayout_8.addWidget(self.label_8, 6, 0, 1, 1)
 
         self.networkUpload = QLineEdit(self.gridLayoutWidget_2)
+        self.networkUpload.setFocusPolicy(Qt.ClickFocus)
         self.networkUpload.setObjectName(u"networkUpload")
         self.networkUpload.setReadOnly(True)
 
         self.gridLayout_8.addWidget(self.networkUpload, 3, 1, 1, 1)
 
         self.networkDownload = QLineEdit(self.gridLayoutWidget_2)
+        self.networkDownload.setFocusPolicy(Qt.ClickFocus)
         self.networkDownload.setObjectName(u"networkDownload")
         self.networkDownload.setReadOnly(True)
 
@@ -485,23 +490,6 @@ class Ui_MainWindow(object):
         QMetaObject.connectSlotsByName(MainWindow)
 
     # setupUi
-    def add_line_edit(self, q_str):
-        # 创建一个新的 QLineEdit
-        line_edit = QLineEdit()
-        line_edit.setText(q_str)
-        line_edit.setReadOnly(True)
-        # 保存新创建的 QLineEdit
-        self.line_edits.append(line_edit)
-        # 将 QLineEdit 添加到布局中
-        self.gridLayout.addWidget(line_edit, 0, 0, 1, 1)
-
-    def remove_last_line_edit(self):
-        if self.line_edits:
-            for line_edit in self.line_edits:
-                self.gridLayout.removeWidget(line_edit)
-                line_edit.deleteLater()
-            # 清空 QLineEdit 列表
-            self.line_edits.clear()
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle("")

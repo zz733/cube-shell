@@ -97,6 +97,9 @@ class MainDialog(QMainWindow):
         icon = QIcon(":index.png")
         self.ui.ShellTab.tabBar().setTabIcon(0, icon)
 
+        # 保存所有 QLineEdit 的列表
+        self.line_edits = []
+
         init_config()
 
         # TODO 添加命令提示，还没有实现--start--
@@ -446,7 +449,7 @@ class MainDialog(QMainWindow):
                     self.isConnected = False
                     self.ui.treeWidget.setColumnCount(1)
                     self.ui.treeWidget.setHeaderLabels(["设备列表"])
-                    self.ui.remove_last_line_edit()
+                    self.remove_last_line_edit()
                     self.ui.treeWidget.clear()
                     self.refreshConf()
                 else:
@@ -460,7 +463,7 @@ class MainDialog(QMainWindow):
                     self.isConnected = False
                     self.ui.treeWidget.setColumnCount(1)
                     self.ui.treeWidget.setHeaderLabels(["设备列表"])
-                    self.ui.remove_last_line_edit()
+                    self.remove_last_line_edit()
                     self.ui.treeWidget.clear()
                     self.refreshConf()
 
@@ -613,7 +616,10 @@ class MainDialog(QMainWindow):
             self.zoom_out()
         else:
             if text and key != Qt.Key_Backspace:
-                self.send(text.encode("utf-8"))
+                focus_widget = QApplication.focusWidget()
+                # QLineEdit回车之后不发送命令
+                if not isinstance(focus_widget, QLineEdit):
+                    self.send(text.encode("utf-8"))
             else:
                 s = keymap.get(key)
                 if s:
@@ -1059,6 +1065,20 @@ class MainDialog(QMainWindow):
             self.add_new_tab()
             self.run()
 
+    # 回车获取目录
+    def on_return_pressed(self):
+        # 获取布局中小部件的数量
+        count = self.ui.gridLayout.count()
+        # 获取最后一个小部件
+        if count > 0:
+            latest_widget = self.ui.gridLayout.itemAt(count - 1).widget()
+            # 检查是否为 QLineEdit
+            if isinstance(latest_widget, QLineEdit):
+                ssh_conn = self.ssh()
+                text = latest_widget.text()
+                ssh_conn.pwd = text
+                self.refreshDirs()
+
     # 断开服务器
     def _off(self, name):
         this = self.get_tab_whats_this_by_name(name)
@@ -1078,7 +1098,7 @@ class MainDialog(QMainWindow):
 
         self.ui.treeWidget.setColumnCount(1)
         self.ui.treeWidget.setHeaderLabels(["设备列表"])
-        self.ui.remove_last_line_edit()
+        self.remove_last_line_edit()
         ssh_conn.pwd = ''
         self.ui.treeWidgetDocker.clear()
         self.ui.result.clear()
@@ -1503,13 +1523,33 @@ class MainDialog(QMainWindow):
             self.ui.treeWidget.topLevelItem(i).setIcon(0, QIcon(':icons8-ssh-48.png'))
             i += 1
 
+    def add_line_edit(self, q_str):
+        # 创建一个新的 QLineEdit
+        line_edit = QLineEdit()
+        line_edit.setFocusPolicy(Qt.ClickFocus)
+        line_edit.setText(q_str)
+        # 保存新创建的 QLineEdit
+        self.line_edits.append(line_edit)
+        # 将 QLineEdit 添加到布局中
+        self.ui.gridLayout.addWidget(line_edit, 0, 0, 1, 1)
+        line_edit.returnPressed.connect(self.on_return_pressed)
+
+    # 删除 QLineEdit
+    def remove_last_line_edit(self):
+        if self.line_edits:
+            for line_edit in self.line_edits:
+                self.ui.gridLayout.removeWidget(line_edit)
+                line_edit.deleteLater()
+            # 清空 QLineEdit 列表
+            self.line_edits.clear()
+
     # 当前目录列表刷新
     def refreshDirs(self):
         ssh_conn = self.ssh()
         ssh_conn.pwd, files = self.getDirNow()
         self.dir_tree_now = files[1:]
         self.ui.treeWidget.setHeaderLabels(["文件名", "文件大小", "修改日期", "权限", "所有者/组"])
-        self.ui.add_line_edit('当前目录：' + ssh_conn.pwd)  # 添加一个初始的 QLineEdit
+        self.add_line_edit(ssh_conn.pwd)  # 添加一个初始的 QLineEdit
         self.ui.treeWidget.clear()
         i = 0
         for n in files[1:]:
