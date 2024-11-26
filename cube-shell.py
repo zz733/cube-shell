@@ -268,10 +268,9 @@ class MainDialog(QMainWindow):
                 self.NAT = True
             else:
                 # 关闭服务和客户端
-                cmd = f"pkill -9 frps"
-                ssh_conn.conn.exec_command(timeout=1, command=cmd, get_pty=False)
+                ssh_conn.conn.exec_command(timeout=1, command="pkill -9 frps", get_pty=False)
                 if platform.system() == 'Darwin' or platform.system() == 'Linux':
-                    os.system(cmd)
+                    os.system("pkill -9 frpc")
                 elif platform.system() == 'Windows':
                     subprocess.run(['taskkill', '/f', '/im', 'frpc.exe'], capture_output=True, text=True)
 
@@ -296,7 +295,8 @@ class MainDialog(QMainWindow):
             for proxy in proxies:
                 self.ui.comboBox_3.setCurrentText(proxy['type'].upper())
                 self.ui.lineEdit_2.setText(str(proxy['localPort']))
-                self.ui.lineEdit_3.setText(str(proxy['remotePort']))
+                if 'remotePort' in proxy:
+                    self.ui.lineEdit_3.setText(str(proxy['remotePort']))
                 break
 
     # 删除标签页
