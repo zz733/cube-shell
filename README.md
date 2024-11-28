@@ -8,59 +8,79 @@
 
 `cube-shell`的设计初衷就是简洁且实用，没有任何多余的菜单干扰我们使用它。安装也很简单，解压不需要安装，就可以直接使用。
 
-##### cube-shell有哪些功能？
+### cube-shell有哪些功能？
+**1.设备列表**
 
-**1.支持sftp协议对文件的操作**
-- 下载文件（支持批量下载）
+![](https://files.mdnice.com/user/66248/dc251e16-cae7-43ca-949e-7a165319d952.png)
+
+- 新增配置
+- 编辑配置
+- 删除配置
+
+**2.快捷菜单栏**
+
+每个菜单栏都支持快捷键
+![](https://files.mdnice.com/user/66248/85e845e8-54d1-4907-8ed5-50ec223e764b.png)
+- 新增配置
+- 新增SSH隧道
+- 导出设备配置
+- 导入设备配置
+
+
+**3.支持sftp协议对文件的操作**
+![](https://files.mdnice.com/user/66248/b409f430-8b91-41fe-99a6-1dca7e514d31.png)
+下载文件（支持批量下载）
 - 上传文件（支持批量上传）
 - 编辑文件
 - 创建文件夹
 - 创建文件
+- 刷新（新增功能）
 - 删除文件和文件夹（支持批量删除）
 
-![输入图片说明](docs/images/1.png)
+**4.支持ssh协议远程操作linux系统**
+![](https://files.mdnice.com/user/66248/5f58f8dc-70bc-4845-82ca-b3d3dc264a1a.png)
 
-**2.支持ssh协议远程操作linux系统**
 - 可以进行终端操作
+- 支持多标签（支持相同服务器）
+- 支持标签拖动顺序
+- 支持复制、粘贴、清屏
 - 代码高亮显示
-- 命令行补全功能
-
-![输入图片说明](test/2.webp)
-
-
-**3.主题切换**
-- `cube-shell`目前支持两种主题切换，暗主题和亮主题两种
-![输入图片说明](test/3.webp)
-![输入图片说明](test/4.webp)
-
-**4.服务器状态监控**
-- CPU 使用率
-- 内存使用率
-- 磁盘使用率
-
-![输入图片说明](test/5.webp)
+- 支持切换终端主题
+- 支持命令行补全功能
+- 支持多标签之间终端和`sftp`文件区域联动
 
 
-**5.查看服务进程**
-- `cube-shell`支持一键查看进程
+**5.主题切换**
 
-![输入图片说明](test/6.webp)
+`cube-shell 1.5.x`版本优化了具有现代化IDE风格的整体主题背景切换，依然支持两种主题切换，暗主题和亮主题两种
+![](https://files.mdnice.com/user/66248/4da39450-bcae-41f7-8784-e6067ee40b9a.jpg)
+![](https://files.mdnice.com/user/66248/1797d0fa-3810-47b2-a921-f8e0e3111e2f.jpg)
 
-**6.支持shell脚本复制粘贴执行**
+**6.状态栏**
 
-- 写好的`shell`脚本可以粘进脚本区域，点击初始化就能执行脚本。脚本区域也支持 不同的linux发行版的差异化命令行执行。
+![](https://files.mdnice.com/user/66248/23fce210-655c-4e3c-a1b6-f1f7676697c0.png)
+- CPU 监控
+- 内存监控
+- 磁盘监控
+- 网络上行
+- 网络下行
+- 操作系统
+- 内核
+- 内核版本
+- 进程管理（支持快速kill进程，支持进程搜索）
 
-![输入图片说明](test/7.webp)
+**7.扩展功能区**
+- SSH隧道功能
+  ![](https://files.mdnice.com/user/66248/ec33c581-d43b-4525-ae58-ca6286187acc.png)
+- 内网穿透功能
+  ![](https://files.mdnice.com/user/66248/ed115724-7599-4cc9-968d-a438b98a5327.png)
+- 容器管理功能
+  ![](https://files.mdnice.com/user/66248/f85c111e-94f8-4178-ad55-8acbfad53099.png)
+- 常用容器功能
+  ![](https://files.mdnice.com/user/66248/28aa3302-a61b-431e-afd9-614e6feeabf6.png)
 
-**7.docker容器管理**
-- 停止容器
-- 重启容器
-- 删除容器
 
-![输入图片说明](test/8.webp)
-
-    
-#### 软件架构
+### 软件架构
 `cube-shell`主要使用`python`语言开发。
 
 主要使用技术：
@@ -69,8 +89,11 @@
 |  Python   |  3.11.9   |     |
 |  PySide6  |  6.7.2   |  是C++ Qt 的Python语言绑定，支持跨平台   |
 |  paramiko   |  3.4.0   |  是python的操作ssh协议和sftp协议的第三方库   |
-|  QDarkStyle   |  3.2.3   |  是 支持 Qt的主题库   |
 |  Pygments   |   2.18.0  |  是python代码高亮的常用库   |
+|  pyqtdarktheme   |   2.1.0  |  是Qt现代主题库   |
+|  deepdiff   |   8.0.1  |  python深度文件比对库   |
+|  pyte   |   0.8.2  |  Linux终端数据流框架   |
+|  frp   |   0.61.0  |  内网穿透套件   |
 
 **图标主要来源以下两个图标库：**
 
@@ -79,9 +102,9 @@
 `https://www.iconfont.cn/`
 
 #### 安装教程
-可以下载最新版本发行版应用程序，也可以下载源代码自行进行编译。
+可以下载最新版本发行版应用程序，也可以下载源代码自行编译。
 
-在编译之前首先要保证机器上要安装`python`环境。
+`cubeShell 1.5.x`版本采用`Nuitka`进行编译，这样可以直接把`python`代码转成`c++`代码，然后直接编译成二进制文件，性能比之前提升了50%左右，包大小减少了40%左右。在编译之前首先要保证机器上要安装`python`环境，并安装相应的依赖包。
 
 ##### 编译windows 程序
 1.  安装环境
@@ -94,12 +117,14 @@ pip install pipenv
 pipenv shell
 //安装依赖
 pipenv install
-pipenv install pyinstaller
-pipenv install pywin32-ctypes
 ```
-3.  编译打包
+3. 编译
 ```
-pkg.bat
+build-exe.bat
+```
+4. 打包exe 安装包
+```
+deploy-install.bat
 ```
 ##### 编译Mac程序
 1.  安装环境
@@ -112,11 +137,10 @@ pip install pipenv
 pipenv shell
 //安装依赖
 pipenv install
-pipenv install py2app
 ```
 3.  编译打包
 ```
-python setup.py py2app --strip --optimize=2
+chmod +x app.sh && ./app.sh
 ```
 
 #### 参与贡献
@@ -132,4 +156,3 @@ python setup.py py2app --strip --optimize=2
 
 #### 有任何不懂的可以加交流群
 ![qq.png.png](docs/images/qq.png)
-![weixin.png.png](docs/images/weixin.png)
