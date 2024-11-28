@@ -11,7 +11,7 @@
 ### cube-shell有哪些功能？
 **1.设备列表**
 
-![](https://files.mdnice.com/user/66248/dc251e16-cae7-43ca-949e-7a165319d952.png)
+![](docs/images/1.png)
 
 - 新增配置
 - 编辑配置
@@ -20,7 +20,7 @@
 **2.快捷菜单栏**
 
 每个菜单栏都支持快捷键
-![](https://files.mdnice.com/user/66248/85e845e8-54d1-4907-8ed5-50ec223e764b.png)
+![](docs/images/2.png)
 - 新增配置
 - 新增SSH隧道
 - 导出设备配置
@@ -28,7 +28,7 @@
 
 
 **3.支持sftp协议对文件的操作**
-![](https://files.mdnice.com/user/66248/b409f430-8b91-41fe-99a6-1dca7e514d31.png)
+![](docs/images/3.png)
 下载文件（支持批量下载）
 - 上传文件（支持批量上传）
 - 编辑文件
@@ -38,7 +38,7 @@
 - 删除文件和文件夹（支持批量删除）
 
 **4.支持ssh协议远程操作linux系统**
-![](https://files.mdnice.com/user/66248/5f58f8dc-70bc-4845-82ca-b3d3dc264a1a.png)
+![](docs/images/4.png)
 
 - 可以进行终端操作
 - 支持多标签（支持相同服务器）
@@ -53,12 +53,12 @@
 **5.主题切换**
 
 `cube-shell 1.5.x`版本优化了具有现代化IDE风格的整体主题背景切换，依然支持两种主题切换，暗主题和亮主题两种
-![](https://files.mdnice.com/user/66248/4da39450-bcae-41f7-8784-e6067ee40b9a.jpg)
-![](https://files.mdnice.com/user/66248/1797d0fa-3810-47b2-a921-f8e0e3111e2f.jpg)
+![](docs/images/5.png)
+![](docs/images/6.png)
 
 **6.状态栏**
 
-![](https://files.mdnice.com/user/66248/23fce210-655c-4e3c-a1b6-f1f7676697c0.png)
+![](docs/images/7.png)
 - CPU 监控
 - 内存监控
 - 磁盘监控
@@ -71,13 +71,13 @@
 
 **7.扩展功能区**
 - SSH隧道功能
-  ![](https://files.mdnice.com/user/66248/ec33c581-d43b-4525-ae58-ca6286187acc.png)
+  ![](docs/images/8.png)
 - 内网穿透功能
-  ![](https://files.mdnice.com/user/66248/ed115724-7599-4cc9-968d-a438b98a5327.png)
+  ![](docs/images/9.png)
 - 容器管理功能
-  ![](https://files.mdnice.com/user/66248/f85c111e-94f8-4178-ad55-8acbfad53099.png)
+  ![](docs/images/10.png)
 - 常用容器功能
-  ![](https://files.mdnice.com/user/66248/28aa3302-a61b-431e-afd9-614e6feeabf6.png)
+  ![](docs/images/11.png)
 
 
 ### 软件架构
