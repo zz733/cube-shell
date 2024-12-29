@@ -1,6 +1,7 @@
 import time
 
 import paramiko
+import threading
 
 from core.backend import BaseBackend
 from core.mux import mux
@@ -63,6 +64,10 @@ class SshClient(BaseBackend):
         self.channel.get_pty(width=200, height=400)
         self.channel.invoke_shell()
         mux.add_backend(self)
+        
+        # 启动一个线程来获取系统信息
+        self.close_sig = 1
+        threading.Thread(target=self.get_datas, daemon=True).start()
 
     def get_read_wait(self):
         """

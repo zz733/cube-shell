@@ -141,8 +141,6 @@ class MainDialog(QMainWindow):
         # 读取 JSON 文件内容
         util.THEME = util.read_json(abspath('theme.json'))
 
-     
-
         # 设置拖放行为
         self.setAcceptDrops(True)
 
@@ -488,9 +486,7 @@ class MainDialog(QMainWindow):
         new_action.setStatusTip("添加配置")
         file_menu.addAction(new_action)
         new_action.triggered.connect(self.showAddConfig)
-
-       
-
+        # 创建“导出配置”动作
         export_configuration = QAction(QIcon(':export.png'), "&导出设备配置", self)
         export_configuration.setIconVisibleInMenu(True)
         export_configuration.setShortcut("Shift+Ctrl+E")
@@ -753,14 +749,10 @@ class MainDialog(QMainWindow):
         ssh_conn = self.ssh()
 
         self.isConnected = True
-        #self.ui.discButton.setEnabled(True)
-        self.ui.result.setEnabled(True)
-        #self.ui.theme.setEnabled(True)
+        # 启动一个线程来获取系统信息
         threading.Thread(target=ssh_conn.get_datas, daemon=True).start()
         self.flushSysInfo()
         self.refreshDirs()
-
-       
 
     def on_initSftpSignal(self):
         self.initSftp()
@@ -1476,6 +1468,7 @@ class MainDialog(QMainWindow):
         if files:
             for file_path in files:
                 if os.path.isfile(file_path):
+                    self.fileEvent = file_path
                     ssh_conn = self.ssh()
                     sftp = ssh_conn.open_sftp()
                     try:
