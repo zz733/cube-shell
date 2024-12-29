@@ -141,16 +141,7 @@ class MainDialog(QMainWindow):
         # 读取 JSON 文件内容
         util.THEME = util.read_json(abspath('theme.json'))
 
-        # 隧道管理
-        self.data = None
-        self.tunnels = []
-        self.tunnel_refresh()
-        self.nat_traversal()
-
-        # 进程管理
-        self.search_text = ""
-        self.all_processes = []
-        self.filtered_processes = []
+     
 
         # 设置拖放行为
         self.setAcceptDrops(True)
@@ -163,8 +154,7 @@ class MainDialog(QMainWindow):
 
         # self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
 
-        self.ui.discButton.clicked.connect(self.disc_off)
-        self.ui.theme.clicked.connect(self.toggleTheme)
+        #self.ui.theme.clicked.connect(self.toggleTheme)
         self.ui.treeWidget.customContextMenuRequested.connect(self.treeRight)
         self.ui.treeWidget.doubleClicked.connect(self.cd)
         self.ui.ShellTab.currentChanged.connect(self.shell_tab_current_changed)
@@ -184,121 +174,14 @@ class MainDialog(QMainWindow):
         # 用于存储拖动开始时的标签索引
         self.originalIndex = -1
 
-        self.ui.treeWidgetDocker.customContextMenuRequested.connect(self.treeDocker)
 
         self.isConnected = False
         self.timer_id = self.startTimer(50)
         # 连接信号和槽
         self.initSftpSignal.connect(self.on_initSftpSignal)
 
-        self.NAT = False
-        self.NAT_lod()
-        self.ui.pushButton.clicked.connect(self.on_NAT_traversal)
 
-    def on_NAT_traversal(self):
-        device = self.ui.comboBox.currentText()
-        server_prot = self.ui.lineEdit_3.text()
-        ant_type = self.ui.comboBox_3.currentText()
-        local_port = self.ui.lineEdit_2.text()
-        token = self.ui.lineEdit.text()
-
-        with open(abspath('config.dat'), 'rb') as c:
-            conf = pickle.loads(c.read())[device]
-            c.close()
-
-        username, password, host, key_type, key_file = '', '', '', '', ''
-
-        if len(conf) == 3:
-            username, password, host = conf[0], conf[1], conf[2]
-        else:
-            username, password, host, key_type, key_file = conf[0], conf[1], conf[2], conf[3], conf[4]
-
-        # 检查服务器是否可以连接
-        if not util.check_server_accessibility(host.split(':')[0], int(host.split(':')[1])):
-            # 删除当前的 tab 并显示警告消息
-            self._delete_tab()
-            QMessageBox.warning(self, "连接超时", "服务器无法连接，请检查网络或服务器状态。")
-            return
-
-        try:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            ssh_conn = SshClient(host.split(':')[0], int(host.split(':')[1]), username, password, key_type, key_file)
-            ssh_conn.connect()
-            # 上传文件
-            sftp = ssh_conn.open_sftp()
-            if not self.NAT:
-                # 如果路径不存在，则创建目录
-                if not util.check_remote_directory_exists(sftp, '/opt/frp'):
-                    # 目前大部分服务器是x86_64 (amd64) 架构
-                    # 以后可能需要按需选择，使用以下检测命令来检测架构类型
-                    # conn_exec = ssh_conn.exec(cmd='arch', pty=False)
-                    # if conn_exec == 'x86_64':
-                    join = os.path.join(current_dir, 'frp', 'frps.tar.gz')
-                    sftp.put(join, '/opt/' + os.path.basename(join))
-                    frps = traversal.frps(token)
-                    # 解压，并替换配置文件
-                    cmd = f"tar -xzvf /opt/frps.tar.gz -C /opt/ && cat <<EOF > /opt/frp/frps.toml {frps}"
-                    ssh_conn.exec(cmd=cmd, pty=False)
-                # 启动服务
-                cmd1 = f"cd /opt/frp && nohup ./frps -c frps.toml &> frps.log &"
-                ssh_conn.conn.exec_command(timeout=1, command=cmd1, get_pty=False)
-
-                # 覆盖本地配置文件
-                frpc = traversal.frpc(host.split(':')[0], token, ant_type, local_port, server_prot)
-                with open(abspath('frpc.toml'), 'w') as file:
-                    file.write(frpc)
-
-                # 获取配置文件绝对路径
-                local_dir = os.path.join(current_dir, 'frp')
-                # 启动客户端
-                cmd_u = f"cd {local_dir} && nohup ./frpc -c {abspath('frpc.toml')} &> frpc.log &"
-                if platform.system() == 'Darwin' or platform.system() == 'Linux':
-                    os.system(cmd_u)
-                elif platform.system() == 'Windows':
-                    subprocess.Popen(
-                        [f"{local_dir}\\frpc.exe", "-c", abspath('frpc.toml')],
-                        stdout=open("frpc.log", "a"),
-                        stderr=subprocess.STDOUT,
-                        creationflags=subprocess.CREATE_NO_WINDOW
-                    )
-
-                icon1 = QIcon()
-                icon1.addFile(u":off.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-                self.ui.pushButton.setIcon(icon1)
-                self.NAT = True
-            else:
-                # 关闭服务和客户端
-                ssh_conn.conn.exec_command(timeout=1, command="pkill -9 frps", get_pty=False)
-                if platform.system() == 'Darwin' or platform.system() == 'Linux':
-                    os.system("pkill -9 frpc")
-                elif platform.system() == 'Windows':
-                    subprocess.run(['taskkill', '/f', '/im', 'frpc.exe'], capture_output=True, text=True)
-
-                icon1 = QIcon()
-                icon1.addFile(u":open.png", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-                self.ui.pushButton.setIcon(icon1)
-                self.NAT = False
-            self.NAT_lod()
-            ssh_conn.close()
-        except Exception as e:
-            print(str(e))
-
-    # 刷新内网穿透页面
-    def NAT_lod(self):
-        with open(abspath('frpc.toml'), 'r') as file:
-            config = toml.load(file)
-        if 'auth' in config:
-            auth_token = config['auth']['token']
-            self.ui.comboBox.setCurrentText(config['serverAddr'])
-            self.ui.lineEdit.setText(auth_token)
-            proxies = config['proxies']
-            for proxy in proxies:
-                self.ui.comboBox_3.setCurrentText(proxy['type'].upper())
-                self.ui.lineEdit_2.setText(str(proxy['localPort']))
-                if 'remotePort' in proxy:
-                    self.ui.lineEdit_3.setText(str(proxy['remotePort']))
-                break
-
+   
     # 删除标签页
     def _delete_tab(self):  # 删除标签页
         current_index = self.ui.ShellTab.currentIndex()
@@ -472,7 +355,6 @@ class MainDialog(QMainWindow):
             pass
         else:
             self.ui.label_7.setText("添加配置 Shift+Ctrl+A")
-            self.ui.label_9.setText("添加隧道 Shift+Ctrl+S")
             self.ui.label_11.setText("帮助 Shift+Ctrl+H")
             self.ui.label_12.setText("关于 Shift+Ctrl+B")
             self.ui.label_13.setText("查找命令行 Shift+Ctrl+C")
@@ -521,86 +403,6 @@ class MainDialog(QMainWindow):
         kill_action.triggered.connect(lambda: self.kill_process(list(first_column_values)))
         menu.addAction(kill_action)
         menu.exec(self.ui.result.viewport().mapToGlobal(pos))
-
-    def update_process_list(self):
-        self.all_processes = self.get_filtered_process_list()
-        self.filtered_processes = self.all_processes[:]
-        self.display_processes()
-
-    def display_processes(self):
-        self.ui.result.setRowCount(0)
-        for row_num, process in enumerate(self.filtered_processes):
-            self.ui.result.insertRow(row_num)
-            self.ui.result.setItem(row_num, 0, QTableWidgetItem(str(process['pid'])))
-            self.ui.result.setItem(row_num, 1, QTableWidgetItem(process['user']))
-            self.ui.result.setItem(row_num, 2, QTableWidgetItem(str(process['memory'])))
-            self.ui.result.setItem(row_num, 3, QTableWidgetItem(str(process['cpu'])))
-            self.ui.result.setItem(row_num, 4, QTableWidgetItem(process['name']))
-            self.ui.result.setItem(row_num, 5, QTableWidgetItem(process['command']))
-            self.ui.result.item(row_num, 0).setData(Qt.UserRole, str(process['pid']))
-
-    @Slot(str)
-    def apply_filter(self, text):
-        self.search_text = text.lower()
-        self.filtered_processes = [p for p in self.all_processes if any(text.lower() in v.lower() for v in p.values())]
-        self.display_processes()
-
-    def get_filtered_process_list(self):
-        try:
-            ssh_conn = self.ssh()
-            # 在远程服务器上执行命令获取进程信息
-            stdin, stdout, stderr = ssh_conn.conn.exec_command(timeout=10, command="ps aux --no-headers",
-                                                               get_pty=False)
-            output = stdout.readlines()
-
-            # 解析输出结果
-            process_list = []
-            system_users = []  # 添加系统用户列表
-            for line in output:
-                fields = line.strip().split()
-                user = fields[0]
-                if user not in system_users:
-                    pid = fields[1]
-                    memory = fields[3]
-                    cpu = fields[2]
-                    name = fields[-1] if len(fields[-1]) <= 15 else fields[-1][:12] + "..."
-                    command = " ".join(fields[10:])
-                    process_list.append({
-                        'pid': pid,
-                        'user': user,
-                        'memory': memory,
-                        'cpu': cpu,
-                        'name': name,
-                        'command': command
-                    })
-
-            return process_list
-
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"连接或检索进程列表失败: {e}")
-            return []
-
-    # kill 选中的进程数据
-    def kill_process(self, selected_rows):
-        pips = ""
-        for value in selected_rows:
-            pips += str(value) + " "
-        # 优雅结束进程，避免数据丢失
-        command = "echo " + pips + "| xargs -n 1 kill -15"
-
-        try:
-            ssh_conn = self.ssh()
-
-            # 在远程服务器上执行命令结束进程
-            stdin, stdout, stderr = ssh_conn.conn.exec_command(timeout=10, command=command, get_pty=False)
-            error = stderr.read().decode('utf-8').strip()
-            if error:
-                QMessageBox.warning(self, "Warning", f"服务器结束以下进程出错 {pips}: {error}")
-            else:
-                QMessageBox.information(self, "Success", f"以下进程 {pips} 被成功 kill.")
-                self.update_process_list()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"kill 以下进程失败 {pips}: {e}")
 
     # 进程管理结束
 
@@ -667,33 +469,7 @@ class MainDialog(QMainWindow):
         # 将窗口移动到新的位置
         self.move(qr.topLeft())
 
-    # 隧道刷新
-    def tunnel_refresh(self):
-        self.data = util.read_json(abspath(CONF_FILE))
-        self.tunnels = []
-
-        # 展示ssh隧道列表
-        if self.data:
-            i = 0
-            for i, name in enumerate(sorted(self.data.keys())):
-                tunnel = Tunnel(name, self.data[name], self)
-                self.tunnels.append(tunnel)
-                self.ui.gridLayout_tunnel_tabs.addWidget(tunnel, i, 0)
-            self.kill_button = QPushButton('关闭所有隧道')
-            self.kill_button.setIcon(QIcon(ICONS.KILL_SSH))
-            self.kill_button.setFocusPolicy(Qt.NoFocus)
-            self.kill_button.clicked.connect(self.do_killall_ssh)
-            self.ui.gridLayout_kill_all.addWidget(self.kill_button, i + 1, 0)
-
-    # NAT穿透
-    def nat_traversal(self):
-        icon_ssh = QIcon()
-        icon_ssh.addFile(u":icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
-        with open(abspath('config.dat'), 'rb') as c:
-            dic = pickle.loads(c.read())
-            c.close()
-        for k in dic.keys():
-            self.ui.comboBox.addItem(icon_ssh, k)
+   
 
     def menuBarController(self):
         # 创建菜单栏
@@ -713,12 +489,7 @@ class MainDialog(QMainWindow):
         file_menu.addAction(new_action)
         new_action.triggered.connect(self.showAddConfig)
 
-        new_ssh_tunnel_action = QAction(QIcon(ICONS.TUNNEL), "&新增SSH隧道", self)
-        new_ssh_tunnel_action.setIconVisibleInMenu(True)
-        new_ssh_tunnel_action.setShortcut("Shift+Ctrl+S")
-        new_ssh_tunnel_action.setStatusTip("新增SSH隧道")
-        file_menu.addAction(new_ssh_tunnel_action)
-        new_ssh_tunnel_action.triggered.connect(self.showAddSshTunnel)
+       
 
         export_configuration = QAction(QIcon(':export.png'), "&导出设备配置", self)
         export_configuration.setIconVisibleInMenu(True)
@@ -982,58 +753,14 @@ class MainDialog(QMainWindow):
         ssh_conn = self.ssh()
 
         self.isConnected = True
-        self.ui.discButton.setEnabled(True)
+        #self.ui.discButton.setEnabled(True)
         self.ui.result.setEnabled(True)
-        self.ui.theme.setEnabled(True)
+        #self.ui.theme.setEnabled(True)
         threading.Thread(target=ssh_conn.get_datas, daemon=True).start()
         self.flushSysInfo()
-        self.refreshDokerInfo()
-        self.flushDokerInfo()
         self.refreshDirs()
 
-        # 检测服务器是否安装了docker，如果没有安装就不展示常用容器
-        data_ = ssh_conn.exec('docker --version')
-        if data_:
-            # 读取json文件
-            items = util.read_json_file(abspath('docker.json'))
-            # 每行最多四个小块
-            max_columns = 6
-            # 遍历列表，创建小块并添加到网格布局中
-            for index, item in enumerate(items):
-                row = index // max_columns
-                col = index % max_columns
-
-                # 创建外部容器
-                container_widget = QWidget()
-                container_layout = QVBoxLayout()
-                container_widget.setLayout(container_layout)
-                container_layout.setContentsMargins(0, 0, 0, 0)  # 去掉布局的内边距
-                container_widget.setStyleSheet("background-color: rgb(187, 232, 221);")
-
-                # 创建自定义小块并添加到外部容器
-                widget = CustomWidget(item, ssh_conn)
-                container_layout.addWidget(widget)
-
-                self.ui.gridLayout_7.addWidget(container_widget, row, col)
-        else:
-            # 创建外部容器
-            container_widget = QWidget()
-            container_layout = QVBoxLayout()
-            container_widget.setLayout(container_layout)
-            container_layout.setContentsMargins(0, 0, 0, 0)  # 去掉布局的内边距
-            container_widget.setStyleSheet("background-color: rgb(187, 232, 221);")
-
-            text_browser = QTextBrowser(container_widget)
-            text_browser.append("\n")
-            text_browser.append("\n")
-            text_browser.append("\n")
-            text_browser.append("服务器还没有安装docker容器")
-            # 设置内容居中对齐
-            text_browser.setAlignment(Qt.AlignCenter)
-            self.ui.gridLayout_7.addWidget(text_browser)
-
-        # 进程管理
-        self.processInitUI()
+       
 
     def on_initSftpSignal(self):
         self.initSftp()
@@ -1383,38 +1110,6 @@ class MainDialog(QMainWindow):
             # 声明当鼠标在groupBox控件上右击时，在鼠标位置显示右键菜单   ,exec_,popup两个都可以，
             self.ui.tree_menu.popup(QCursor.pos())
 
-    # 创建docker列表树右键菜单函数
-    def treeDocker(self):
-        if self.isConnected:
-            self.ui.tree_menu = QMenu(self)
-            self.ui.tree_menu.setStyleSheet("""
-                QMenu::item {
-                    padding-left: 5px;  /* 调整图标和文字之间的间距 */
-                }
-                QMenu::icon {
-                    padding-right: 0px; /* 设置图标右侧的间距 */
-                }
-            """)
-            self.ui.action1 = QAction(QIcon(':stop.png'), '停止', self)
-            self.ui.action1.setIconVisibleInMenu(True)
-            self.ui.action2 = QAction(QIcon(':restart.png'), '重启', self)
-            self.ui.action2.setIconVisibleInMenu(True)
-            self.ui.action3 = QAction(QIcon(':remove.png'), '删除', self)
-            self.ui.action3.setIconVisibleInMenu(True)
-            # self.ui.action4 = QAction('日志', self)
-
-            self.ui.tree_menu.addAction(self.ui.action1)
-            self.ui.tree_menu.addAction(self.ui.action2)
-            self.ui.tree_menu.addAction(self.ui.action3)
-            # self.ui.tree_menu.addAction(self.ui.action4)
-
-            self.ui.action1.triggered.connect(self.stopDockerContainer)
-            self.ui.action2.triggered.connect(self.restartDockerContainer)
-            self.ui.action3.triggered.connect(self.rmDockerContainer)
-            # self.ui.action4.triggered.connect(self.rmDockerContainer)
-
-            # 声明当鼠标在groupBox控件上右击时，在鼠标位置显示右键菜单,exec_,popup两个都可以，
-            self.ui.tree_menu.popup(QCursor.pos())
 
     # 打开增加配置界面
     def showAddConfig(self):
@@ -1456,11 +1151,7 @@ class MainDialog(QMainWindow):
         self.ui.addconfwin.dial.pushButton.clicked.connect(self.refreshConf)
         self.ui.addconfwin.dial.pushButton_2.clicked.connect(self.ui.addconfwin.close)
 
-    # 打开增加隧道界面
-    def showAddSshTunnel(self):
-        self.add = AddTunnelConfig(self)
-        self.add.setModal(True)
-        self.add.show()
+  
 
     # 导出配置
     def export_configuration(self):
@@ -1753,49 +1444,7 @@ class MainDialog(QMainWindow):
             self.ui.memRate.setValue(0)
             self.ui.diskRate.setValue(0)
 
-    def flushDokerInfo(self):
-        ssh_conn = self.ssh()
 
-        timer2 = QTimer()
-        timer2.start(5000)
-        ssh_conn.timer2 = timer2
-        ssh_conn.timer2.timeout.connect(self.refreshDokerInfo)
-
-    def refreshDokerInfo(self):
-        if self.isConnected:
-            current_index = self.ui.ShellTab.currentIndex()
-            this = self.ui.ShellTab.tabWhatsThis(current_index)
-            if this:
-                ssh_conn = mux.backend_index[this]
-
-                info = ssh_conn.docker_info
-                self.ui.treeWidgetDocker.clear()
-                self.ui.treeWidgetDocker.headerItem().setText(0, 'docker容器管理：')
-                if len(info) != 0:
-                    i = 0
-                    for n in info:
-                        self.ui.treeWidgetDocker.addTopLevelItem(QTreeWidgetItem(0))
-                        self.ui.treeWidgetDocker.topLevelItem(i).setText(0, n)
-                        if i != 0:
-                            self.ui.treeWidgetDocker.topLevelItem(i).setIcon(0, QIcon(":icons8-docker-48.png"))
-                        # 设置字体为加粗
-                        if i == 0:
-                            bold_font = QFont()
-                            bold_font.setBold(True)  # 设置字体为加粗
-                            self.ui.treeWidgetDocker.topLevelItem(i).setFont(0, bold_font)
-
-                        i += 1
-
-                    # 设置列宽为自适应内容
-                    for i in range(self.ui.treeWidgetDocker.columnCount()):
-                        self.ui.treeWidgetDocker.resizeColumnToContents(i)
-                else:
-                    self.ui.treeWidgetDocker.addTopLevelItem(QTreeWidgetItem(0))
-                    self.ui.treeWidgetDocker.topLevelItem(0).setText(0, '服务器还没有安装docker容器')
-        else:
-            self.ui.treeWidgetDocker.clear()
-            self.ui.treeWidgetDocker.addTopLevelItem(QTreeWidgetItem(0))
-            self.ui.treeWidgetDocker.topLevelItem(0).setText(0, '没有可用的docker容器')
 
     # 下载文件
     def downloadFile(self):
@@ -1958,29 +1607,7 @@ class MainDialog(QMainWindow):
             time.sleep(1)  # 延迟一秒
             self.refreshDokerInfo()
 
-    # 重启docker容器
-    def restartDockerContainer(self):
-        focus = self.ui.treeWidgetDocker.currentIndex().row()
-        if focus != -1:
-            text = self.ui.treeWidgetDocker.topLevelItem(focus).text(0)
-            # 取出前12位字符串
-            container_id = text[:12]
-            data_ = self.getData2('docker restart ' + container_id)
-            print('restart----', data_)
-            time.sleep(1)  # 延迟一秒
-            self.refreshDokerInfo()
-
-    # 删除docker容器
-    def rmDockerContainer(self):
-        focus = self.ui.treeWidgetDocker.currentIndex().row()
-        if focus != -1:
-            text = self.ui.treeWidgetDocker.topLevelItem(focus).text(0)
-            # 取出前12位字符串
-            container_id = text[:12]
-            data_ = self.getData2('docker rm ' + container_id)
-            print('rm----', data_)
-            time.sleep(1)  # 延迟一秒
-            self.refreshDokerInfo()
+   
 
     # 删除文件夹
     def removeDir(self):
@@ -2345,434 +1972,6 @@ class CustomWidget(QWidget):
                 background-color: darkgray;
             }
         """)
-
-    def installAction(self, item, ssh_conn):
-        """
-        点击安装按钮，安装docker容器
-        :param item: 数据对象
-        :param ssh_conn: ssh 连接对象
-        :return:
-        """
-
-        self.docker = InstallDocker(item, ssh_conn)
-        self.docker.dial.lineEdit_containerName.setText(item['containerName'])
-        self.docker.dial.lineEdit_Image.setText(item['image'])
-
-        volumes = ""
-        environment_variables = ""
-        labels = ""
-        ports = ""
-        for port in item['ports']:
-            ports += "-p " + port['source'] + ":" + port['destination'] + " "
-        self.docker.dial.lineEdit_ports.setText(ports)
-
-        for bind in item['volumes']:
-            volumes += "-v " + bind.get('destination') + ":" + bind.get('source') + " "
-        self.docker.dial.lineEdit_volumes.setText(volumes)
-
-        for env in item['environmentVariables']:
-            environment_variables += "-e " + env.get('name') + "=" + env.get('value') + " "
-        self.docker.dial.lineEdit_environmentVariables.setText(environment_variables)
-
-        for label in item['labels']:
-            labels += "--" + label.get('name') + "=" + label.get('value') + " "
-        self.docker.dial.lineEdit_labels.setText(labels)
-
-        if item['containerName']:
-            self.docker.dial.checkBox_privileged.setChecked(True)
-
-        self.docker.communicate.refresh_parent.connect(lambda: self.refresh(item, ssh_conn))
-        self.docker.show()
-
-    def refresh(self, item, ssh_conn):
-        # 安装按钮
-        self.install_button.setText("已安装")
-        self.install_button.setStyleSheet("background-color: rgb(102, 221, 121);")
-        self.install_button.setDisabled(True)
-
-
-# docker容器安装
-class InstallDocker(QDialog):
-    def __init__(self, item, ssh_conn):
-        super().__init__()
-        self.dial = docker_install.Ui_Dialog()
-        self.dial.setupUi(self)
-        self.setWindowIcon(QIcon(":icons8-docker-48.png"))
-        # 取消
-        self.dial.buttonBoxDockerInstall.rejected.connect(self.reject)
-        # 安装
-        self.dial.buttonBoxDockerInstall.accepted.connect(lambda: self.installDocker(item, ssh_conn))
-
-        # 创建一个 Communicate 实例
-        self.communicate = Communicate()
-        # 在对话框关闭时发射信号
-        self.finished.connect(self.onFinished)
-
-    @Slot(int)
-    def onFinished(self, result):
-        # 当对话框关闭时发射信号
-        self.communicate.refresh_parent.emit()
-
-    def installDocker(self, item, ssh_conn):
-        try:
-            container_name = self.dial.lineEdit_containerName.text()
-            image = self.dial.lineEdit_Image.text()
-            volumes = self.dial.lineEdit_volumes.text()
-            environment = self.dial.lineEdit_environmentVariables.text()
-            labels = self.dial.lineEdit_labels.text()
-            ports = self.dial.lineEdit_ports.text()
-            cmd_ = item['cmd']
-
-            formatter = HtmlFormatter(style='rrt', noclasses=True)
-
-            privileged = ""
-            if self.dial.checkBox_privileged.isChecked():
-                privileged = "--privileged=true"
-
-            cmd1 = "docker pull " + image
-            ack = ssh_conn.exec(cmd=cmd1, pty=False)
-            highlighted = highlight(ack, PythonLexer(), formatter)
-            self.dial.textBrowserDockerInout.append(highlighted)
-            if ack:
-                #  创建宿主机挂载目录
-                cmd_volumes = ""
-                for bind in item['volumes']:
-                    cmd_volumes += f"mkdir -p " + bind.get('destination') + " "
-                ssh_conn.exec(cmd=cmd_volumes, pty=False)
-
-                # 创建临时容器
-                image_str = f"{image}".split(":", 1)
-                ports_12_chars = f"{ports}"[:12]
-                cmd2 = f"docker run {ports_12_chars} --name {container_name} -d {image_str[0]}"
-                ack = ssh_conn.exec(cmd=cmd2, pty=False)
-                # 睡眠一秒
-                time.sleep(1)
-                highlighted = highlight(ack, PythonLexer(), formatter)
-                self.dial.textBrowserDockerInout.append(highlighted)
-                if ack:
-                    for bind in item['volumes']:
-                        source = bind.get('source')
-                        cp = bind.get('cp')
-                        cmd3 = f"docker cp {container_name}:{source}/ {cp}" + " "
-                        ack = ssh_conn.exec(cmd=cmd3, pty=False)
-                        highlighted = highlight(ack, PythonLexer(), formatter)
-                        self.dial.textBrowserDockerInout.append(highlighted)
-
-                    cmd_stop = f"docker stop {container_name}"
-                    ack = ssh_conn.exec(cmd=cmd_stop, pty=False)
-                    # 删除临时容器
-                    if ack:
-                        cmd4 = f"docker rm {container_name}"
-                        ack = ssh_conn.exec(cmd=cmd4, pty=False)
-                        self.dial.textBrowserDockerInout.append(ack)
-
-            cmd = f"docker run -d --name {container_name} {environment} {ports} {volumes} {labels} {privileged} {image} {cmd_}"
-            ack = ssh_conn.exec(cmd=cmd, pty=False)
-            highlighted = highlight(ack, PythonLexer(), formatter)
-            self.dial.textBrowserDockerInout.append(highlighted)
-
-        except Exception as e:
-            print(f"安装失败：{e}")
-            return 'error'
-        print("安装成功")
-
-
-class TunnelConfig(QDialog):
-    """
-    初始化配置对话框并设置UI元素值；
-    监听UI变化以更新SSH命令；
-    提供复制SSH命令和
-    """
-
-    def __init__(self, parent, data):
-        super(TunnelConfig, self).__init__(parent)
-
-        self.ui = Ui_TunnelConfig()
-        self.ui.setupUi(self)
-
-        icon_ssh = QIcon()
-        icon_ssh.addFile(u":icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
-        with open(abspath('config.dat'), 'rb') as c:
-            dic = pickle.loads(c.read())
-            c.close()
-        for k in dic.keys():
-            self.ui.comboBox_ssh.addItem(icon_ssh, k)
-
-        tunnel_type = data.get(KEYS.TUNNEL_TYPE)
-        self.ui.comboBox_tunnel_type.setCurrentText(tunnel_type)
-        self.ui.comboBox_ssh.setCurrentText(data.get(KEYS.DEVICE_NAME))
-        self.ui.remote_bind_address_edit.setText(data.get(KEYS.REMOTE_BIND_ADDRESS))
-        if tunnel_type == "动态":
-            self.ui.remote_bind_address_edit.hide()
-            self.ui.label_remote_bind_address_edit.hide()
-        else:
-            self.ui.remote_bind_address_edit.show()
-            self.ui.label_remote_bind_address_edit.show()
-        self.ui.local_bind_address_edit.setText(data.get(KEYS.LOCAL_BIND_ADDRESS))
-        self.ui.browser_open.setText(data.get(KEYS.BROWSER_OPEN))
-        self.ui.copy.clicked.connect(self.do_copy_ssh_command)
-        self.ui.comboBox_tunnel_type.currentIndexChanged.connect(self.readonly_remote_bind_address_edit)
-
-    def readonly_remote_bind_address_edit(self):
-        tunnel_type = self.ui.comboBox_tunnel_type.currentText()
-        if tunnel_type == "动态":
-            self.ui.remote_bind_address_edit.hide()
-            self.ui.label_remote_bind_address_edit.hide()
-        else:
-            self.ui.remote_bind_address_edit.show()
-            self.ui.label_remote_bind_address_edit.show()
-
-    def render_ssh_command(self):
-        text = self.ui.local_bind_address_edit.text()
-        ssh = self.ui.comboBox_ssh.currentText()
-        username, password, host, key_type, key_file = open_data(ssh)
-        if not util.check_server_accessibility(host.split(':')[0], int(host.split(':')[1])):
-            QMessageBox.warning(self, "连接超时", "服务器无法连接，请检查网络或服务器状态。")
-            return
-
-        ssh_command = (f"ssh -L {int(text.split(':')[1])}:{self.ui.remote_bind_address_edit.text()} "
-                       f"{username}@{host.split(':')[0]}")
-        self.ui.ssh_command.setText(ssh_command)
-
-    def do_copy_ssh_command(self):
-        clipboard = QApplication.clipboard()
-        clipboard.setText(self.ui.ssh_command.text())
-
-    def as_dict(self):
-        return {
-            KEYS.TUNNEL_TYPE: self.ui.comboBox_tunnel_type.currentText(),
-            KEYS.BROWSER_OPEN: self.ui.browser_open.text(),
-            KEYS.DEVICE_NAME: self.ui.comboBox_ssh.currentText(),
-            KEYS.REMOTE_BIND_ADDRESS: self.ui.remote_bind_address_edit.text(),
-            KEYS.LOCAL_BIND_ADDRESS: self.ui.local_bind_address_edit.text(),
-        }
-
-
-class AddTunnelConfig(QDialog):
-    """
-    初始化配置对话框并设置UI元素值；
-    监听UI变化以更新SSH命令；
-    提供复制SSH命令和
-    """
-
-    def __init__(self, parent=None):
-        super(AddTunnelConfig, self).__init__(parent)
-
-        self.tunnel = Ui_AddTunnelConfig()
-        self.tunnel.setupUi(self)
-
-        icon_ssh = QIcon()
-        icon_ssh.addFile(u":icons8-ssh-48.png", QSize(), QIcon.Mode.Selected, QIcon.State.On)
-        with open(abspath('config.dat'), 'rb') as c:
-            dic = pickle.loads(c.read())
-            c.close()
-        for k in dic.keys():
-            self.tunnel.comboBox_ssh.addItem(icon_ssh, k)
-
-        self.tunnel.add_tunnel.accepted.connect(self.addTunnel)
-        self.tunnel.add_tunnel.rejected.connect(TunnelConfig.reject)
-        self.tunnel.comboBox_tunnel_type.currentIndexChanged.connect(self.readonly_remote_bind_address_edit)
-
-    def addTunnel(self):
-
-        remote = self.tunnel.remote_bind_address_edit.text()
-        tunnel_type = self.tunnel.comboBox_tunnel_type.currentText()
-        if remote == '' and tunnel_type != '动态':
-            QMessageBox.critical(self, "警告", "请填写远程绑定地址")
-            return
-        split = remote.split(':')
-        if len(split) != 2 and tunnel_type != '动态':
-            QMessageBox.critical(self, "警告", "远程绑定地址格式不正确，请检查")
-            return
-
-        local = self.tunnel.local_bind_address_edit.text()
-        if local == '':
-            QMessageBox.critical(self, "警告", "请填写本地绑定地址")
-            return
-        local_split = local.split(':')
-        if len(local_split) != 2:
-            QMessageBox.critical(self, "警告", "本地绑定地址格式不正确，请检查")
-            return
-        if self.tunnel.ssh_tunnel_name.text() == '':
-            QMessageBox.critical(self, "警告", "请填写隧道名称")
-            return
-
-        dic = {
-            KEYS.TUNNEL_TYPE: self.tunnel.comboBox_tunnel_type.currentText(),
-            KEYS.BROWSER_OPEN: self.tunnel.browser_open.text(),
-            KEYS.DEVICE_NAME: self.tunnel.comboBox_ssh.currentText(),
-            KEYS.REMOTE_BIND_ADDRESS: self.tunnel.remote_bind_address_edit.text(),
-            KEYS.LOCAL_BIND_ADDRESS: self.tunnel.local_bind_address_edit.text(),
-        }
-
-        file_path = abspath('tunnel.json')
-        # 读取 JSON 文件内容
-        data = util.read_json(file_path)
-        data[self.tunnel.ssh_tunnel_name.text()] = dic
-
-        # 将修改后的数据写回 JSON 文件
-        util.write_json(file_path, data)
-        self.close()
-
-        util.clear_grid_layout(self.parent().ui.gridLayout_tunnel_tabs)
-        util.clear_grid_layout(self.parent().ui.gridLayout_kill_all)
-
-        self.parent().tunnel_refresh()
-
-    def readonly_remote_bind_address_edit(self):
-        tunnel_type = self.tunnel.comboBox_tunnel_type.currentText()
-        if tunnel_type == "动态":
-            self.tunnel.remote_bind_address_edit.hide()
-            self.tunnel.label_remote_bind_address_edit.hide()
-        else:
-            self.tunnel.remote_bind_address_edit.show()
-            self.tunnel.label_remote_bind_address_edit.show()
-
-
-class Tunnel(QWidget):
-    """
-    创建单个隧道实例，包括启动、停止隧道以及打开浏览器的功能。
-    """
-
-    def __init__(self, name, data, parent=None):
-        super(Tunnel, self).__init__(parent)
-
-        self.ui = Ui_Tunnel()
-        self.ui.setupUi(self)
-        self.manager = ForwarderManager()
-
-        self.tunnelconfig = TunnelConfig(self, data)
-        self.tunnelconfig.setWindowTitle(name)
-        self.tunnelconfig.setModal(True)
-        self.ui.name.setText(name)
-
-        self.tunnelconfig.icon = F":{name}.png"
-
-        if not os.path.exists(self.tunnelconfig.icon):
-            self.tunnelconfig.icon = ICONS.TUNNEL
-
-        self.ui.icon.setPixmap(QPixmap(self.tunnelconfig.icon))
-        self.ui.action_tunnel.clicked.connect(self.do_tunnel)
-        self.ui.action_settings.clicked.connect(self.show_tunnel_config)
-        self.ui.action_open.clicked.connect(self.do_open_browser)
-        self.ui.delete_ssh.clicked.connect(lambda: self.delete_tunnel(parent))
-
-        self.process = False
-
-    # 打开修改页面
-    def show_tunnel_config(self):
-        self.tunnelconfig.render_ssh_command()
-        self.tunnelconfig.show()
-
-    def do_open_browser(self):
-        browser_open = self.tunnelconfig.ui.browser_open.text()
-        if browser_open:
-            QDesktopServices.openUrl(QUrl(browser_open))
-
-    def do_tunnel(self):
-        if self.process:
-            try:
-                self.stop_tunnel()
-            except Exception as e:
-                print(f"Error stopping tunnel: {e}")
-        else:
-            try:
-                self.start_tunnel()
-            except Exception as e:
-                print(f"Error starting tunnel: {e}")
-        # Ensure UI is updated after the tunnel operation completes
-        self.update_ui()
-
-    def update_ui(self):
-        if self.process:
-            self.ui.action_tunnel.setIcon(QIcon(ICONS.STOP))
-        else:
-            self.ui.action_tunnel.setIcon(QIcon(ICONS.START))
-
-    def start_tunnel(self):
-        type_ = self.tunnelconfig.ui.comboBox_tunnel_type.currentText()
-        ssh = self.tunnelconfig.ui.comboBox_ssh.currentText()
-
-        # 本地服务器地址
-        local_bind_address = self.tunnelconfig.ui.local_bind_address_edit.text()
-        local_host, local_port = local_bind_address.split(':')[0], int(local_bind_address.split(':')[1])
-
-        # 获取SSH信息
-        ssh_user, ssh_password, host, key_type, key_file = open_data(ssh)
-        ssh_host, ssh_port = host.split(':')[0], int(host.split(':')[1])
-
-        tunnel, ssh_client, transport = None, None, None
-        tunnel_id = self.ui.name.text()
-        if type_ == '本地':
-            remote_bind_address = self.tunnelconfig.ui.remote_bind_address_edit.text()
-            remote_host, remote_port = remote_bind_address.split(':')[0], int(remote_bind_address.split(':')[1])
-            # 启动本地转发隧道
-            tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'local', local_host, local_port,
-                                                                      remote_host, remote_port, ssh_host, ssh_port,
-                                                                      ssh_user, ssh_password, key_type, key_file)
-        if type_ == '远程':
-            remote_bind_address = self.tunnelconfig.ui.remote_bind_address_edit.text()
-            remote_host, remote_port = remote_bind_address.split(':')[0], int(remote_bind_address.split(':')[1])
-            # 启动远程转发隧道
-            tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'remote', local_host, local_port,
-                                                                      remote_host, remote_port, ssh_host, ssh_port,
-                                                                      ssh_user, ssh_password, key_type, key_file)
-        if type_ == '动态':
-            # 启动动态转发隧道
-            tunnel, ssh_client, transport = self.manager.start_tunnel(tunnel_id, 'dynamic', local_host, local_port,
-                                                                      ssh_host=ssh_host, ssh_port=ssh_port,
-                                                                      ssh_user=ssh_user, ssh_password=ssh_password,
-                                                                      key_type=key_type, key_file=key_file)
-
-        self.manager.add_tunnel(tunnel_id, tunnel)
-        self.manager.ssh_clients[ssh_client] = transport
-        if transport:
-            self.process = True
-
-        self.ui.action_tunnel.setIcon(QIcon(ICONS.STOP))
-        self.do_open_browser()
-
-    def stop_tunnel(self):
-        try:
-            name_text = self.ui.name.text()
-            self.manager.remove_tunnel(name_text)
-            self.process = False
-
-        except Exception as e:
-            print(f"Error stopping process: {e}")
-        self.ui.action_tunnel.setIcon(QIcon(ICONS.START))
-
-    # 删除隧道
-    def delete_tunnel(self, parent):
-
-        # 创建消息框
-        reply = QMessageBox()
-        reply.setWindowTitle('确认删除')
-        reply.setText(f'您确定要删除此隧道吗？这将无法恢复！')
-        reply.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-
-        # 设置按钮文本为中文
-        yes_button = reply.button(QMessageBox.Yes)
-        no_button = reply.button(QMessageBox.No)
-        yes_button.setText("确定")
-        no_button.setText("取消")
-        # 显示对话框并等待用户响应
-        reply.exec()
-
-        if reply.clickedButton() == yes_button:
-            name_text = self.ui.name.text()
-            file_path = abspath('tunnel.json')
-            # 读取 JSON 文件内容
-            data = util.read_json(file_path)
-            del data[name_text]
-            # 将修改后的数据写回 JSON 文件
-            util.write_json(file_path, data)
-            # 刷新隧道列表
-            util.clear_grid_layout(parent.ui.gridLayout_tunnel_tabs)
-            util.clear_grid_layout(parent.ui.gridLayout_kill_all)
-            parent.tunnel_refresh()
-        else:
-            pass
 
 
 class CommandDelegate(QStyledItemDelegate):
