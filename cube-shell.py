@@ -164,6 +164,8 @@ class MainDialog(QMainWindow):
         self.ui.ShellTab.currentChanged.connect(self.shell_tab_current_changed)
         # 设置选择模式为多选模式
         self.ui.treeWidget.setSelectionMode(QTreeWidget.ExtendedSelection)
+        # 设置右键菜单策略
+        self.ui.treeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
         # 添加事件过滤器
         self.ui.treeWidget.viewport().installEventFilter(self)
 
