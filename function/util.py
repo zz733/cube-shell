@@ -326,3 +326,17 @@ def symbolic_to_octal(symbolic):
             calc_permission(group) * 10 +
             calc_permission(others)
     )
+
+
+def get_config_dir():
+    """获取配置文件目录"""
+    home = os.path.expanduser('~')
+    config_dir = os.path.join(home, '.cube-shell')
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+    return config_dir
+
+
+def get_config_path(filename):
+    """获取配置文件的完整路径"""
+    return os.path.join(get_config_dir(), filename)

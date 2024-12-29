@@ -52,11 +52,24 @@ class MainWindow(QMainWindow):
 
     def apply_theme(self, theme_type):
         if self.parent:
+            # 保存主题设置到配置文件
+            file_path = util.get_config_path('theme.json')
+            data = util.read_json(file_path)
+            
             if theme_type == "dark":
                 self.parent.setDarkTheme()
+                data['theme'] = "暗色主题"
+                data['theme_color'] = "#272C35"
             else:
                 self.parent.setLightTheme()
-            QMessageBox.information(self, "切换主题", "主题切换成功")
+                data['theme'] = "亮色主题"
+                data['theme_color'] = "#FFFFFF"
+            
+            # 将修改后的数据写回 JSON 文件
+            util.write_json(file_path, data)
+            util.THEME = data
+            
+            #QMessageBox.information(self, "切换主题", "主题切换成功")
             self.close()
 
 

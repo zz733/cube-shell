@@ -105,6 +105,13 @@ class MainDialog(QMainWindow):
 
         init_config()
 
+        # 读取主题设置
+        theme_data = util.read_json(util.get_config_path('theme.json'))
+        if theme_data.get('theme') == "暗色主题":
+            self.setDarkTheme()
+        else:
+            self.setLightTheme()
+
         # TODO 添加命令提示，还没有实现--start--
         # 自动完成提示命令行工具
         self.commands = None
@@ -138,11 +145,10 @@ class MainDialog(QMainWindow):
         self.command_list.installEventFilter(self)
         # TODO 添加命令提示，还没有实现--end--
 
-        self.setDarkTheme()  # 默认设置为暗主题
         self.index_pwd()
 
         # 读取 JSON 文件内容
-        util.THEME = util.read_json(abspath('theme.json'))
+        util.THEME = util.read_json(util.get_config_path('theme.json'))
 
         # 设置拖放行为
         self.setAcceptDrops(True)
@@ -563,7 +569,7 @@ class MainDialog(QMainWindow):
         self.tree_search_app = TreeSearchApp()
 
         # 读取 JSON 数据并填充模型
-        self.tree_search_app.load_data_from_json(abspath('linux_commands.json'))
+        self.tree_search_app.load_data_from_json(util.abspath('linux_commands.json'))
         self.tree_search_app.show()
 
     # 帮助
@@ -699,7 +705,7 @@ class MainDialog(QMainWindow):
         if focus != -1:
             name = self.ui.treeWidget.topLevelItem(focus).text(0)
 
-            with open(abspath('config.dat'), 'rb') as c:
+            with open(util.get_config_path('config.dat'), 'rb') as c:
                 conf = pickle.loads(c.read())[name]
                 c.close()
 
@@ -791,7 +797,7 @@ class MainDialog(QMainWindow):
             if focus != -1 and self.dir_tree_now[focus][0].startswith('d'):
                 ssh_conn = self.ssh()
                 ssh_conn.pwd = self.getData2(
-                    'cd ' + ssh_conn.pwd + '/' + self.ui.treeWidget.topLevelItem(focus).text(0) +
+                    'cd ' + ssh_conn.pwd.replace("//", "/") + '/' + self.ui.treeWidget.topLevelItem(focus).text(0) +
                     ' && pwd')[:-1]
                 self.refreshDirs()
             else:
@@ -1134,7 +1140,7 @@ class MainDialog(QMainWindow):
             for item in selected_items:
                 # 获取项的内容
                 name = item.text(0)
-                with open(abspath('config.dat'), 'rb') as c:
+                with open(util.get_config_path('config.dat'), 'rb') as c:
                     conf = pickle.loads(c.read())[name]
 
                 if len(conf) == 3:
@@ -1158,7 +1164,7 @@ class MainDialog(QMainWindow):
 
     # 导出配置
     def export_configuration(self):
-        src_path = abspath('config.dat')
+        src_path = util.get_config_path('config.dat')
         # 选择保存文件夹
         directory = QFileDialog.getExistingDirectory(
             None,  # 父窗口，这里为None表示没有父窗口
@@ -1174,7 +1180,7 @@ class MainDialog(QMainWindow):
 
     # 导入配置
     def import_configuration(self):
-        config = abspath('config.dat')
+        config = util.get_config_path('config.dat')
 
         file_name, _ = QFileDialog.getOpenFileName(
             self,
@@ -1193,7 +1199,7 @@ class MainDialog(QMainWindow):
 
     # 刷新设备列表
     def refreshConf(self):
-        config = abspath('config.dat')
+        config = util.get_config_path('config.dat')
         with open(config, 'rb') as c:
             dic = pickle.loads(c.read())
             c.close()
@@ -1391,7 +1397,7 @@ class MainDialog(QMainWindow):
                 for item in selected_items:
                     # 获取项的内容
                     name = item.text(0)
-                    config = abspath('config.dat')
+                    config = util.get_config_path('config.dat')
                     with open(config, 'rb') as c:
                         conf = pickle.loads(c.read())
                     with open(config, 'wb') as c:
@@ -1820,7 +1826,7 @@ class AddConfigUi(QDialog):
         elif ip == '':
             self.alarm('ip地址不能为空！')
         else:
-            config = abspath('config.dat')
+            config = util.get_config_path('config.dat')
             with open(config, 'rb') as c:
                 conf = pickle.loads(c.read())
                 c.close()
@@ -1997,23 +2003,33 @@ class CommandDelegate(QStyledItemDelegate):
 
 
 def open_data(ssh):
-    with open(abspath('config.dat'), 'rb') as c:
+    with open(util.get_config_path('config.dat'), 'rb') as c:
         conf = pickle.loads(c.read())[ssh]
     username, password, host, key_type, key_file = '', '', '', '', ''
     if len(conf) == 3:
-        return username, password, host, '', ''
+        return conf[0], conf[1], conf[2], '', ''
     else:
         return conf[0], conf[1], conf[2], conf[3], conf[4]
 
 
 # 初始化配置文件
 def init_config():
-    config = abspath('config.dat')
+    # 初始化 config.dat
+    config = util.get_config_path('config.dat')
     if not os.path.exists(config):
         with open(config, 'wb') as c:
             start_dic = {}
             c.write(pickle.dumps(start_dic))
-            c.close()
+    
+    # 初始化 theme.json
+    theme_config = util.get_config_path('theme.json')
+    if not os.path.exists(theme_config):
+        with open(theme_config, 'w', encoding='utf-8') as f:
+            theme_data = {
+                'theme': '暗色主题',
+                'theme_color': '#272C35'
+            }
+            json.dump(theme_data, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == '__main__':
