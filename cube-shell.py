@@ -94,9 +94,15 @@ class MainDialog(QMainWindow):
         self.setAttribute(Qt.WA_KeyCompression, True)
         self.setFocusPolicy(Qt.WheelFocus)
         self.Shell = None
+        
+        # 设置标签页
+        self.ui.ShellTab.setTabsClosable(True)  # 先设置所有标签页不可关闭
         icon = QIcon(":index.png")
         self.ui.ShellTab.tabBar().setTabIcon(0, icon)
-
+        # 首页不显示关闭按钮
+        self.ui.ShellTab.tabBar().setTabButton(0, QTabBar.RightSide, None)
+        self.ui.ShellTab.tabBar().setTabButton(0, QTabBar.LeftSide, None)
+        
         # 保存所有 QLineEdit 的列表
         self.line_edits = []
 
@@ -198,12 +204,14 @@ class MainDialog(QMainWindow):
 
     # 增加标签页
     def add_new_tab(self):
+        """添加新标签页"""
         focus = self.ui.treeWidget.currentIndex().row()
         if focus != -1:
             name = self.ui.treeWidget.topLevelItem(focus).text(0)
             self.tab = QWidget()
             self.tab.setObjectName("tab")
 
+            # 设置布局
             self.verticalLayout_index = QVBoxLayout(self.tab)
             self.verticalLayout_index.setSpacing(0)
             self.verticalLayout_index.setObjectName(u"verticalLayout_index")
@@ -212,32 +220,42 @@ class MainDialog(QMainWindow):
             self.verticalLayout_shell = QVBoxLayout()
             self.verticalLayout_shell.setObjectName(u"verticalLayout_shell")
 
+            # 创建文本浏览器
             self.Shell = QTextBrowser(self.tab)
             self.Shell.setReadOnly(True)
             self.Shell.setObjectName(u"Shell")
+            self.Shell.setAttribute(Qt.WA_InputMethodEnabled, True)
+            self.Shell.setAttribute(Qt.WA_KeyCompression, True)
+            self.Shell.contextMenuEvent = self.showCustomContextMenu
+            
+            # 添加到布局
             self.verticalLayout_shell.addWidget(self.Shell)
             self.verticalLayout_index.addLayout(self.verticalLayout_shell)
+            
+            # 添加标签页
             tab_name = self.generate_unique_tab_name(name)
             tab_index = self.ui.ShellTab.addTab(self.tab, tab_name)
             self.ui.ShellTab.setCurrentIndex(tab_index)
+
+            # 设置标签页可关闭
+            if tab_index > 0:  # 不是首页
+                self.ui.ShellTab.setTabsClosable(True)
+                # 移除首页的关闭按钮
+                #self.ui.ShellTab.tabBar().setTabButton(0, QTabBar.RightSide, None)
+                #self.ui.ShellTab.tabBar().setTabButton(0, QTabBar.LeftSide, None)
+            
             self.Shell.setAttribute(Qt.WA_InputMethodEnabled, True)
             self.Shell.setAttribute(Qt.WA_KeyCompression, True)
-            # 重写 contextMenuEvent 方法
             self.Shell.contextMenuEvent = self.showCustomContextMenu
 
             # 连接信号和槽
             # self.Shell.cursorPositionChanged.connect(self.show_command_list)
 
-            if tab_index > 0:
+            #if tab_index > 0:
                 # 不再需要左侧的关闭按钮
-                self.ui.ShellTab.tabBar().setTabButton(tab_index, QTabBar.LeftSide, None)
-            else:
-                self.ui.ShellTab.tabBar().setTabButton(tab_index, QTabBar.LeftSide, None)
-
-            # 设置标签页可关闭
-            self.ui.ShellTab.setTabsClosable(True)
-            # 首页不可关闭
-            self.ui.ShellTab.tabBar().setTabButton(0, QTabBar.RightSide, None)
+            #    self.ui.ShellTab.tabBar().setTabButton(tab_index, QTabBar.LeftSide, None)
+            #else:
+            #    self.ui.ShellTab.tabBar().setTabButton(tab_index, QTabBar.LeftSide, None)
 
     # TODO 添加命令提示，还没有实现--start--
     def on_text_changed(self, text):
