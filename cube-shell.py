@@ -555,7 +555,7 @@ class MainDialog(QMainWindow):
         self.about_dialog.show()
 
     def theme(self):
-        self.theme_dialog = theme.MainWindow()
+        self.theme_dialog = theme.MainWindow(self)
         self.theme_dialog.show()
 
     # linux 常用命令
