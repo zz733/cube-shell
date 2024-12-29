@@ -172,6 +172,8 @@ class MainDialog(QMainWindow):
         # 用于存储拖动开始时的标签索引
         self.originalIndex = -1
 
+        # 连接标签页关闭信号
+        self.ui.ShellTab.tabCloseRequested.connect(self.on_tab_close)
 
         self.isConnected = False
         self.timer_id = self.startTimer(50)
@@ -227,17 +229,15 @@ class MainDialog(QMainWindow):
             # self.Shell.cursorPositionChanged.connect(self.show_command_list)
 
             if tab_index > 0:
-                close_button = QPushButton(self)
-                close_button.setCursor(QCursor(Qt.PointingHandCursor))
-                close_button.setIcon(self.style().standardIcon(QStyle.SP_TitleBarCloseButton))
-                close_button.setMaximumSize(QSize(16, 16))
-                close_button.setFlat(True)
-                close_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-
-                close_button.clicked.connect(lambda: self.off(tab_index, tab_name))
-                self.ui.ShellTab.tabBar().setTabButton(tab_index, QTabBar.LeftSide, close_button)
+                # 不再需要左侧的关闭按钮
+                self.ui.ShellTab.tabBar().setTabButton(tab_index, QTabBar.LeftSide, None)
             else:
                 self.ui.ShellTab.tabBar().setTabButton(tab_index, QTabBar.LeftSide, None)
+
+            # 设置标签页可关闭
+            self.ui.ShellTab.setTabsClosable(True)
+            # 首页不可关闭
+            self.ui.ShellTab.tabBar().setTabButton(0, QTabBar.RightSide, None)
 
     # TODO 添加命令提示，还没有实现--start--
     def on_text_changed(self, text):
@@ -661,6 +661,7 @@ class MainDialog(QMainWindow):
     # 复制文本
     def copy(self):
         ssh_conn = self.ssh()
+
         # 获取当前选中的文本，并复制到剪贴板
         selected_text = ssh_conn.Shell.textCursor().selectedText()
         clipboard = QApplication.clipboard()
@@ -801,38 +802,49 @@ class MainDialog(QMainWindow):
     # 断开服务器
     def _off(self, name):
         this = self.get_tab_whats_this_by_name(name)
-        ssh_conn = mux.backend_index[this]
+        if this and this in mux.backend_index:
+            ssh_conn = mux.backend_index[this]
+            if hasattr(ssh_conn, 'timer1') and ssh_conn.timer1:
+                try:
+                    ssh_conn.timer1.stop()
+                except:
+                    pass
+            if hasattr(ssh_conn, 'timer2') and ssh_conn.timer2:
+                try:
+                    ssh_conn.timer2.stop()
+                except:
+                    pass
+            ssh_conn.term_data = b''
+            try:
+                ssh_conn.close()
+            except:
+                pass
+            self.isConnected = False
+            self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
+            self.ui.networkUpload.setText('')
+            self.ui.networkDownload.setText('')
+            self.ui.operatingSystem.setText('')
 
-        ssh_conn.timer1.stop()
-        ssh_conn.timer2.stop()
-        ssh_conn.term_data = b''
-        ssh_conn.close()
-        self.isConnected = False
-        self.ssh_username, self.ssh_password, self.ssh_ip, self.key_type, self.key_file = None, None, None, None, None
-        self.ui.networkUpload.setText('')
-        self.ui.networkDownload.setText('')
-        self.ui.operatingSystem.setText('')
-        self.ui.kernel.setText('')
-        self.ui.kernelVersion.setText('')
+            self.ui.treeWidget.setColumnCount(1)
+            self.ui.treeWidget.setHeaderLabels(["设备列表"])
+            self.remove_last_line_edit()
+            ssh_conn.pwd = ''
+            if hasattr(self.ui, 'result'):
+                self.ui.result.clear()
+                # 隐藏顶部的列头
+                self.ui.result.horizontalHeader().setVisible(False)
+                self.ui.result.setRowCount(0)  # 设置行数为零
 
-        self.ui.treeWidget.setColumnCount(1)
-        self.ui.treeWidget.setHeaderLabels(["设备列表"])
-        self.remove_last_line_edit()
-        ssh_conn.pwd = ''
-        self.ui.treeWidgetDocker.clear()
-        self.ui.result.clear()
-        # 隐藏顶部的列头
-        self.ui.result.horizontalHeader().setVisible(False)
-        self.ui.result.setRowCount(0)  # 设置行数为零
 
-        util.clear_grid_layout(self.ui.gridLayout_7)
+            self.ui.cpuRate.setValue(0)
+            self.ui.diskRate.setValue(0)
+            self.ui.memRate.setValue(0)
 
-        self.ui.cpuRate.setValue(0)
-        self.ui.diskRate.setValue(0)
-        self.ui.memRate.setValue(0)
-
-        ssh_conn.close()
-        self.refreshConf()
+            try:
+                ssh_conn.close()
+            except:
+                pass
+            self.refreshConf()
 
     # 断开服务器并删除tab
     def off(self, index, name):
@@ -959,24 +971,7 @@ class MainDialog(QMainWindow):
         :return:
         """
         data = {}
-        for tunnel in self.tunnels:
-            name = tunnel.ui.name.text()
-            data[name] = tunnel.tunnelconfig.as_dict()
-
-        # DeepDiff 库用于比较两个复杂数据结构（如字典、列表、集合等）之间的差异，
-        # 能够识别并报告添加、删除或修改的数据项。
-        # 它支持多级嵌套结构的深度比较，适用于调试或数据同步场景。
-        changed = DeepDiff(self.data, data, ignore_order=True)
-        if changed:
-            timestamp = int(time.time())
-            tunnel_json_path = abspath(CONF_FILE)
-            shutil.copy(tunnel_json_path, F"{tunnel_json_path}-{timestamp}")
-            with open(tunnel_json_path, "w") as fp:
-                json.dump(data, fp)
-            backup_configs = glob.glob(F"{tunnel_json_path}-*")
-            if len(backup_configs) > 10:
-                for config in sorted(backup_configs, reverse=True)[10:]:
-                    os.remove(config)
+        
         event.accept()
 
     def inputMethodEvent(self, a0: QInputMethodEvent) -> None:
@@ -1402,41 +1397,38 @@ class MainDialog(QMainWindow):
         if self.isConnected:
             current_index = self.ui.ShellTab.currentIndex()
             this = self.ui.ShellTab.tabWhatsThis(current_index)
-            if this:
+            if this and this in mux.backend_index:
                 ssh_conn = mux.backend_index[this]
-                system_info_dict = ssh_conn.system_info_dict
-                cpu_use = ssh_conn.cpu_use
-                mem_use = ssh_conn.mem_use
-                dissk_use = ssh_conn.disk_use
-                # 上行
-                transmit_speed = ssh_conn.transmit_speed
-                # 下行
-                receive_speed = ssh_conn.receive_speed
+                if hasattr(ssh_conn, 'system_info_dict'):
+                    system_info_dict = ssh_conn.system_info_dict
+                    cpu_use = ssh_conn.cpu_use if hasattr(ssh_conn, 'cpu_use') else 0
+                    mem_use = ssh_conn.mem_use if hasattr(ssh_conn, 'mem_use') else 0
+                    dissk_use = ssh_conn.disk_use if hasattr(ssh_conn, 'disk_use') else 0
+                    # 上行
+                    transmit_speed = ssh_conn.transmit_speed if hasattr(ssh_conn, 'transmit_speed') else 0
+                    # 下行
+                    receive_speed = ssh_conn.receive_speed if hasattr(ssh_conn, 'receive_speed') else 0
 
-                self.ui.cpuRate.setValue(cpu_use)
-                self.ui.cpuRate.setStyleSheet(updateColor(cpu_use))
-                self.ui.memRate.setValue(mem_use)
-                self.ui.memRate.setStyleSheet(updateColor(mem_use))
-                self.ui.diskRate.setValue(dissk_use)
-                self.ui.diskRate.setStyleSheet(updateColor(dissk_use))
+                    self.ui.cpuRate.setValue(cpu_use)
+                    self.ui.cpuRate.setStyleSheet(updateColor(cpu_use))
+                    self.ui.memRate.setValue(mem_use)
+                    self.ui.memRate.setStyleSheet(updateColor(mem_use))
+                    self.ui.diskRate.setValue(dissk_use)
+                    self.ui.diskRate.setStyleSheet(updateColor(dissk_use))
 
-                # self.ui.networkUpload.setValue(util.format_speed(transmit_speed))
-                # 自定义显示格式
-                self.ui.networkUpload.setText(util.format_speed(transmit_speed))
-                self.ui.networkDownload.setText(util.format_speed(receive_speed))
-                self.ui.operatingSystem.setText(system_info_dict['Operating System'])
-                self.ui.kernelVersion.setText(system_info_dict['Kernel'])
-                if 'Firmware Version' in system_info_dict:
-                    self.ui.kernel.setText(system_info_dict['Firmware Version'])
-                else:
-                    self.ui.kernel.setText("无")
+                    # 自定义显示格式
+                    self.ui.networkUpload.setText(util.format_speed(transmit_speed))
+                    self.ui.networkDownload.setText(util.format_speed(receive_speed))
+                    if 'Operating System' in system_info_dict:
+                        self.ui.operatingSystem.setText(system_info_dict['Operating System'])
 
         else:
             self.ui.cpuRate.setValue(0)
             self.ui.memRate.setValue(0)
             self.ui.diskRate.setValue(0)
-
-
+            self.ui.networkUpload.setText('')
+            self.ui.networkDownload.setText('')
+            self.ui.operatingSystem.setText('')
 
     # 下载文件
     def downloadFile(self):
@@ -1711,6 +1703,16 @@ class MainDialog(QMainWindow):
             self.setLightTheme()
         else:
             self.setDarkTheme()
+
+
+    # 处理标签页关闭事件
+    def on_tab_close(self, index):
+        """
+        处理标签页关闭事件
+        """
+        tab_name = self.ui.ShellTab.tabText(index)
+        if tab_name != "首页":
+            self.off(index, tab_name)
 
 
 # 权限确认
