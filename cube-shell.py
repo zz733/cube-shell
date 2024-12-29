@@ -35,10 +35,7 @@ from function import util, about, theme, traversal
 from function.ssh_func import SshClient
 from function.util import format_file_size, has_valid_suffix
 from style.style import updateColor
-from ui import add_config, text_editor, confirm, main, docker_install, auth
-from ui.add_tunnel_config import Ui_AddTunnelConfig
-from ui.tunnel import Ui_Tunnel
-from ui.tunnel_config import Ui_TunnelConfig
+from ui import add_config, text_editor, confirm, main, auth
 import icons.icons
 
 keymap = {
@@ -358,7 +355,6 @@ class MainDialog(QMainWindow):
                         ssh_conn.close_sig = 1
                         self.isConnected = True
                         self.refreshDirs()
-                        self.processInitUI()
             else:
                 if current_text == "首页":
                     self.isConnected = False
